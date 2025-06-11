@@ -38,6 +38,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/__pycache__/
+__pycache__/
 # Python cache files
 *.py[cod]
+*.db
