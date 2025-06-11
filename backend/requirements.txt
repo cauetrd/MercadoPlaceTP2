@@ -1,0 +1,8 @@
+# Roda esse comando rapeize
+pip install dotenv fastapi uvicorn pydantic prisma prisma-client pytest
+# run
+prisma db push
+# run
+prisma generate
+# run
+uvicorn main:app --reload
