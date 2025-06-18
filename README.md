@@ -42,7 +42,7 @@ Navegue até a pasta backend e execute:
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
 2. Para rodar o Prisma
 Navegue até a pasta prisma e execute:
@@ -66,3 +66,7 @@ cd frontend
 npm install
 npm run dev
 ```
+
+5. Instale as dependências de lint e afins
+- Para o backend, usando vscode use pylance, pydantic
+- Para o frontend, use o eslint e o prettier
