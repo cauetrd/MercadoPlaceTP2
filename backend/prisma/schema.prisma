@@ -25,12 +25,12 @@ model User {
 
 // Modelo para os Itens de produto
 model Product {
-  id          Int    @id @default(autoincrement())
-  name              String          @unique // Nome do produto
-  barcode           String?         @unique // Código de barras do produto (opcional, mas recomendado para consistência)
-  imageUrl          String?         // URL da imagem do produto
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id            Int    @id @default(autoincrement())
+  name          String          @unique // Nome do produto
+  barcode       String?         @unique // Código de barras do produto (opcional, mas recomendado para consistência)
+  imageUrl      String?         // URL da imagem do produto
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
   // Relacionamentos
   prices            Price[]
   shoppingListItems ShoppingListItem[]
@@ -54,10 +54,10 @@ model Store {
 
 // Modelo para o Preço do Produto em um determinado Supermercado
 model Price {
-  id          Int    @id @default(autoincrement())
-  productId     String
-  storeId       String
-  userId        String     // Usuário que informou o preço
+  id            Int    @id @default(autoincrement())
+  productId     Int
+  storeId       Int
+  userId        Int     // Usuário que informou o preço
   value         Float
   dateRecorded  DateTime   @default(now())
   reliability   Int        @default(1) // Medida de confiabilidade do preço (e.g., quantas pessoas informaram, ou rating do usuário)
@@ -73,8 +73,8 @@ model Price {
 
 // Modelo para as Listas de Compras
 model ShoppingList {
-  id          Int    @id @default(autoincrement())
-  userId       String
+  id           Int    @id @default(autoincrement())
+  userId       Int
   name         String
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
@@ -85,9 +85,9 @@ model ShoppingList {
 
 // Modelo para os Itens dentro de uma Lista de Compras
 model ShoppingListItem {
-  id          Int    @id @default(autoincrement())
-  shoppingListId String
-  productId      String
+  id             Int    @id @default(autoincrement())
+  shoppingListId Int
+  productId      Int
   quantity       Float         @default(1)
   unit           String?       // Unidade do item na lista (e.g., "unidades", "kg")
   isPurchased    Boolean       @default(false) // Indica se o item foi pego no supermercado
@@ -104,8 +104,8 @@ model ShoppingListItem {
 // Modelo para a localização de um produto dentro de um supermercado
 model ProductLocation {
   id          Int    @id @default(autoincrement())
-  productId   String
-  storeId     String
+  productId   Int
+  storeId     Int
   aisleNumber Int?      // Número do corredor/estante
   shelfPosition String? // Posição na estante (e.g., "prateleira de cima", "seção laticínios")
   gpsLocation String?   // Coordenadas GPS específicas dentro da loja (se aplicável)
@@ -121,12 +121,12 @@ model ProductLocation {
 // Modelo para avaliações/comentários de produtos
 model Review {
   id          Int    @id @default(autoincrement())
-  productId String
-  userId    String
-  rating    Int      // Avaliação de 1 a 5, por exemplo
-  comment   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  productId   Int
+  userId      Int
+  rating      Int      // Avaliação de 1 a 5, por exemplo
+  comment     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   // Relacionamentos
   product   Product  @relation(fields: [productId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
