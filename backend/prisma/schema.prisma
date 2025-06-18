@@ -10,7 +10,7 @@ datasource db {
 
 // Modelo para o Usuário do sistema
 model User {
-  id          String    @id @default(uuid())
+  id          Int    @id @default(autoincrement())
   username    String    @unique
   email       String    @unique
   password    String
@@ -25,7 +25,7 @@ model User {
 
 // Modelo para os Itens de produto
 model Product {
-  id                String          @id @default(uuid())
+  id          Int    @id @default(autoincrement())
   name              String          @unique // Nome do produto
   barcode           String?         @unique // Código de barras do produto (opcional, mas recomendado para consistência)
   imageUrl          String?         // URL da imagem do produto
@@ -40,7 +40,7 @@ model Product {
 
 // Modelo para os Supermercados/Estabelecimentos
 model Store {
-  id          String    @id @default(uuid())
+  id          Int    @id @default(autoincrement())
   name        String
   address     String?
   latitude    Float?
@@ -54,7 +54,7 @@ model Store {
 
 // Modelo para o Preço do Produto em um determinado Supermercado
 model Price {
-  id            String     @id @default(uuid())
+  id          Int    @id @default(autoincrement())
   productId     String
   storeId       String
   userId        String     // Usuário que informou o preço
@@ -73,7 +73,7 @@ model Price {
 
 // Modelo para as Listas de Compras
 model ShoppingList {
-  id           String             @id @default(uuid())
+  id          Int    @id @default(autoincrement())
   userId       String
   name         String
   createdAt    DateTime           @default(now())
@@ -85,7 +85,7 @@ model ShoppingList {
 
 // Modelo para os Itens dentro de uma Lista de Compras
 model ShoppingListItem {
-  id             String        @id @default(uuid())
+  id          Int    @id @default(autoincrement())
   shoppingListId String
   productId      String
   quantity       Float         @default(1)
@@ -103,7 +103,7 @@ model ShoppingListItem {
 
 // Modelo para a localização de um produto dentro de um supermercado
 model ProductLocation {
-  id          String    @id @default(uuid())
+  id          Int    @id @default(autoincrement())
   productId   String
   storeId     String
   aisleNumber Int?      // Número do corredor/estante
@@ -120,7 +120,7 @@ model ProductLocation {
 
 // Modelo para avaliações/comentários de produtos
 model Review {
-  id        String   @id @default(uuid())
+  id          Int    @id @default(autoincrement())
   productId String
   userId    String
   rating    Int      // Avaliação de 1 a 5, por exemplo
