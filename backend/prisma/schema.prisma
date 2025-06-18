@@ -8,11 +8,128 @@ datasource db {
     url      = "file:database.db"
 }
 
+// Modelo para o Usuário do sistema
 model User {
-    id        Int      @id @default(autoincrement())
-    username  String   
-    email     String   @unique
-    password  String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id          String    @id @default(uuid())
+  username    String    @unique
+  email       String    @unique
+  password    String
+  admin       Boolean   @default(false) // Indica se o usuário é um administrador
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  // Relacionamentos
+  shoppingLists ShoppingList[]
+  prices        Price[]
+  reviews       Review[]
+}
+
+// Modelo para os Itens de produto
+model Product {
+  id                String          @id @default(uuid())
+  name              String          @unique // Nome do produto
+  barcode           String?         @unique // Código de barras do produto (opcional, mas recomendado para consistência)
+  imageUrl          String?         // URL da imagem do produto
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  // Relacionamentos
+  prices            Price[]
+  shoppingListItems ShoppingListItem[]
+  reviews           Review[]
+  locations         ProductLocation[] // Adiciona o lado oposto da relação com ProductLocation
+}
+
+// Modelo para os Supermercados/Estabelecimentos
+model Store {
+  id          String    @id @default(uuid())
+  name        String
+  address     String?
+  latitude    Float?
+  longitude   Float?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  // Relacionamentos
+  prices      Price[]
+  locations   ProductLocation[]
+}
+
+// Modelo para o Preço do Produto em um determinado Supermercado
+model Price {
+  id            String     @id @default(uuid())
+  productId     String
+  storeId       String
+  userId        String     // Usuário que informou o preço
+  value         Float
+  dateRecorded  DateTime   @default(now())
+  reliability   Int        @default(1) // Medida de confiabilidade do preço (e.g., quantas pessoas informaram, ou rating do usuário)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  // Relacionamentos
+  product       Product    @relation(fields: [productId], references: [id])
+  store         Store      @relation(fields: [storeId], references: [id])
+  user          User       @relation(fields: [userId], references: [id])
+
+  @@unique([productId, storeId, dateRecorded, userId]) // Garante que um usuário não cadastre o mesmo preço para o mesmo produto/loja na mesma data
+}
+
+// Modelo para as Listas de Compras
+model ShoppingList {
+  id           String             @id @default(uuid())
+  userId       String
+  name         String
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  // Relacionamentos
+  user         User               @relation(fields: [userId], references: [id])
+  items        ShoppingListItem[]
+}
+
+// Modelo para os Itens dentro de uma Lista de Compras
+model ShoppingListItem {
+  id             String        @id @default(uuid())
+  shoppingListId String
+  productId      String
+  quantity       Float         @default(1)
+  unit           String?       // Unidade do item na lista (e.g., "unidades", "kg")
+  isPurchased    Boolean       @default(false) // Indica se o item foi pego no supermercado
+  priceAtPurchase Float?       // Preço do item no momento da compra (se registrado manualmente ou por imagem)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  // Relacionamentos
+  shoppingList   ShoppingList  @relation(fields: [shoppingListId], references: [id])
+  product        Product       @relation(fields: [productId], references: [id])
+
+  @@unique([shoppingListId, productId]) // Garante que um item de produto esteja apenas uma vez em uma lista
+}
+
+// Modelo para a localização de um produto dentro de um supermercado
+model ProductLocation {
+  id          String    @id @default(uuid())
+  productId   String
+  storeId     String
+  aisleNumber Int?      // Número do corredor/estante
+  shelfPosition String? // Posição na estante (e.g., "prateleira de cima", "seção laticínios")
+  gpsLocation String?   // Coordenadas GPS específicas dentro da loja (se aplicável)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  // Relacionamentos
+  product     Product   @relation(fields: [productId], references: [id])
+  store       Store     @relation(fields: [storeId], references: [id])
+
+  @@unique([productId, storeId]) // Um produto tem uma localização única por loja
+}
+
+// Modelo para avaliações/comentários de produtos
+model Review {
+  id        String   @id @default(uuid())
+  productId String
+  userId    String
+  rating    Int      // Avaliação de 1 a 5, por exemplo
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // Relacionamentos
+  product   Product  @relation(fields: [productId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([productId, userId]) // Um usuário só pode fazer uma avaliação por produto
 }
