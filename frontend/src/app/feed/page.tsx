@@ -56,10 +56,23 @@ export default function FeedPage() {
     setIsModalOpen(true);
   };
 
-  const handleAddToCart = (product: ProductResponseDto) => {
-    console.log("Adicionar ao carrinho:", product);
-    // TODO: Implementar adição ao carrinho/lista de compras
+  const handleAddToCart = async (product: ProductResponseDto) => {
+    try {
+      const payload = {
+        productId: product.id,
+        quantity: 1, // ou permita o usuário escolher depois
+      };
+
+      await apiService.post("/shopping-list/items", payload);
+
+      // Feedback visual opcional
+      alert(`"${product.name}" added to your cart!`);
+    } catch (error) {
+      console.error("Failed to add item to cart:", error);
+      alert("An error occurred while adding the item to the cart.");
+    }
   };
+
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -157,8 +170,15 @@ export default function FeedPage() {
         <header className="bg-white shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold text-gray-900">
-                🛒 MercadoPlace - Feed de Produtos
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <button
+                  onClick={() => (window.location.href = "/cart")}
+                  className="hover:scale-110 transition-transform cursor-pointer"
+                  title="Ir para o carrinho"
+                >
+                  🛒
+                </button>
+                MercadoPlace - Feed de Produtos
               </h1>
               <div className="text-sm text-gray-500">
                 {loading
