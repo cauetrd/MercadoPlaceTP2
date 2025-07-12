@@ -1,135 +1,149 @@
 generator client {
-    provider = "prisma-client-js"
-    recursive_type_depth = 5
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "sqlite"
-    url      = "file:database.db"
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
-// Modelo para o Usuário do sistema
+/// Modelo para os usuários do sistema.
 model User {
-  id          Int    @id @default(autoincrement())
-  username    String    @unique
-  email       String    @unique
-  password    String
-  admin       Boolean   @default(false) // Indica se o usuário é um administrador
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  // Relacionamentos
-  shoppingLists ShoppingList[]
-  prices        Price[]
-  reviews       Review[]
+  id        String @id @default(uuid())
+  email     String @unique
+  name      String
+  password  String // lembrar de armazenar o hash da senha
+
+  latitude  Float?
+  longitude Float?
+
+  isAdmin   Boolean @default(false)
+  points    Int     @default(0)
+
+  // Relações
+  shoppingList      ItemListaDeCompra[] // A lista de compras ATUAL do usuário.
+  reviews           ReviewMarket[]      // Avaliações de mercados feitas por este usuário.
+  completedPurchases CompraFinalizada[] // O histórico de compras finalizadas do usuário.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-// Modelo para os Itens de produto
+/// Modelo para os produtos disponíveis no sistema.
 model Product {
-  id            Int    @id @default(autoincrement())
-  name          String          @unique // Nome do produto
-  barcode       String?         @unique // Código de barras do produto (opcional, mas recomendado para consistência)
-  imageUrl      String?         // URL da imagem do produto
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  // Relacionamentos
-  prices            Price[]
-  shoppingListItems ShoppingListItem[]
-  reviews           Review[]
-  locations         ProductLocation[] // Adiciona o lado oposto da relação com ProductLocation
+  id           String  @id @default(uuid())
+  name         String  @unique
+  description  String?
+  currentPrice Float
+  imageUrl     String?
+  isValid      Boolean @default(false)
+
+  
+  priceHistory      PriceHistory[]
+  inShoppingLists   ItemListaDeCompra[]
+  markets           Market[]
+  inPurchasedItems  ItemComprado[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-// Modelo para os Supermercados/Estabelecimentos
-model Store {
-  id          Int    @id @default(autoincrement())
-  name        String
-  address     String?
-  latitude    Float?
-  longitude   Float?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  // Relacionamentos
-  prices      Price[]
-  locations   ProductLocation[]
+/// Modelo para os mercados
+model Market {
+  id        String @id @default(uuid())
+  name      String
+  latitude  Float
+  longitude Float
+
+  // Relações
+  availableProducts Product[]      
+  reviews           ReviewMarket[] 
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-// Modelo para o Preço do Produto em um determinado Supermercado
-model Price {
-  id            Int    @id @default(autoincrement())
-  productId     Int
-  storeId       Int
-  userId        Int     // Usuário que informou o preço
-  value         Float
-  dateRecorded  DateTime   @default(now())
-  reliability   Int        @default(1) // Medida de confiabilidade do preço (e.g., quantas pessoas informaram, ou rating do usuário)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  // Relacionamentos
-  product       Product    @relation(fields: [productId], references: [id])
-  store         Store      @relation(fields: [storeId], references: [id])
-  user          User       @relation(fields: [userId], references: [id])
+// --- Tabelas de Relação e Histórico ---
 
-  @@unique([productId, storeId, dateRecorded, userId]) // Garante que um usuário não cadastre o mesmo preço para o mesmo produto/loja na mesma data
+/// Representa um item específico na lista de compras de um usuário (carrinho).
+model ItemListaDeCompra {
+  id         String  @id @default(uuid())
+  quantity   Int     @default(1)
+  isSelected Boolean @default(false)
+
+  // Relações
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId])
 }
 
-// Modelo para as Listas de Compras
-model ShoppingList {
-  id           Int    @id @default(autoincrement())
-  userId       Int
-  name         String
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
-  // Relacionamentos
-  user         User               @relation(fields: [userId], references: [id])
-  items        ShoppingListItem[]
+/// Armazena o histórico de preços de um produto.
+model PriceHistory {
+  id    String  @id @default(uuid())
+  price Float
+
+  // Relações
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+
+  createdAt DateTime @default(now())
 }
 
-// Modelo para os Itens dentro de uma Lista de Compras
-model ShoppingListItem {
-  id             Int    @id @default(autoincrement())
-  shoppingListId Int
-  productId      Int
-  quantity       Float         @default(1)
-  unit           String?       // Unidade do item na lista (e.g., "unidades", "kg")
-  isPurchased    Boolean       @default(false) // Indica se o item foi pego no supermercado
-  priceAtPurchase Float?       // Preço do item no momento da compra (se registrado manualmente ou por imagem)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  // Relacionamentos
-  shoppingList   ShoppingList  @relation(fields: [shoppingListId], references: [id])
-  product        Product       @relation(fields: [productId], references: [id])
+/// Modela uma avaliação feita por um usuário a um mercado.
+model ReviewMarket {
+  id      String @id @default(uuid())
+  rating  Int 
+  comment String?
 
-  @@unique([shoppingListId, productId]) // Garante que um item de produto esteja apenas uma vez em uma lista
+  // Relações
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  market    Market @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  marketId  String
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, marketId])
 }
 
-// Modelo para a localização de um produto dentro de um supermercado
-model ProductLocation {
-  id          Int    @id @default(autoincrement())
-  productId   Int
-  storeId     Int
-  aisleNumber Int?      // Número do corredor/estante
-  shelfPosition String? // Posição na estante (e.g., "prateleira de cima", "seção laticínios")
-  gpsLocation String?   // Coordenadas GPS específicas dentro da loja (se aplicável)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  // Relacionamentos
-  product     Product   @relation(fields: [productId], references: [id])
-  store       Store     @relation(fields: [storeId], references: [id])
 
-  @@unique([productId, storeId]) // Um produto tem uma localização única por loja
+/// Representa uma única compra finalizada por um usuário.
+/// Cada vez que o usuário "fecha" um carrinho, um registro deste é criado.
+model CompraFinalizada {
+  id        String @id @default(uuid())
+  totalCost Float
+
+  // Relações
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  
+  // A lista de itens que fizeram parte desta compra.
+  purchasedItems ItemComprado[]
+
+  createdAt DateTime @default(now()) // Data em que a compra foi finalizada.
 }
 
-// Modelo para avaliações/comentários de produtos
-model Review {
-  id          Int    @id @default(autoincrement())
-  productId   Int
-  userId      Int
-  rating      Int      // Avaliação de 1 a 5, por exemplo
-  comment     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  // Relacionamentos
-  product   Product  @relation(fields: [productId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+/// Representa um item específico que fez parte de uma compra finalizada.
+/// É um "snapshot" do produto no momento da compra, para garantir a integridade do histórico.
+model ItemComprado {
+  id        String @id @default(uuid())
+  
+  productName  String  // Guarda o nome como estava na hora da compra.
+  priceAtTime  Float
+  quantity     Int
 
-  @@unique([productId, userId]) // Um usuário só pode fazer uma avaliação por produto
+  // Relações
+  purchase   CompraFinalizada @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  purchaseId String
+  
+  // Relação com o produto original, para poder clicar e ver o produto hoje.
+  // onDelete: SetNull significa que se o produto for deletado do sistema, o histórico não será perdido.
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId String?
 }
