@@ -73,9 +73,8 @@ async function main() {
   });
 
   // Criar produtos
-  const products = [
+  const productsData = [
     {
-      id: 'product-1',
       name: 'Arroz Integral 1kg',
       description: 'Arroz integral orgânico de alta qualidade',
       currentPrice: 8.99,
@@ -83,7 +82,6 @@ async function main() {
       isValid: true,
     },
     {
-      id: 'product-2',
       name: 'Feijão Preto 1kg',
       description: 'Feijão preto selecionado',
       currentPrice: 6.5,
@@ -91,7 +89,6 @@ async function main() {
       isValid: true,
     },
     {
-      id: 'product-3',
       name: 'Óleo de Soja 900ml',
       description: 'Óleo de soja refinado',
       currentPrice: 4.99,
@@ -99,7 +96,6 @@ async function main() {
       isValid: true,
     },
     {
-      id: 'product-4',
       name: 'Açúcar Cristal 1kg',
       description: 'Açúcar cristal branco',
       currentPrice: 3.99,
@@ -107,7 +103,6 @@ async function main() {
       isValid: true,
     },
     {
-      id: 'product-5',
       name: 'Café Torrado 500g',
       description: 'Café torrado e moído tradicional',
       currentPrice: 12.99,
@@ -115,7 +110,6 @@ async function main() {
       isValid: true,
     },
     {
-      id: 'product-6',
       name: 'Leite Integral 1L',
       description: 'Leite integral UHT',
       currentPrice: 4.5,
@@ -124,9 +118,10 @@ async function main() {
     },
   ];
 
-  for (const productData of products) {
+  const createdProducts: any[] = [];
+  for (const productData of productsData) {
     const product = await prisma.product.upsert({
-      where: { id: productData.id },
+      where: { name: productData.name },
       update: {},
       create: {
         ...productData,
@@ -137,6 +132,7 @@ async function main() {
         },
       },
     });
+    createdProducts.push(product);
 
     // Conectar produtos aos mercados (alguns produtos em alguns mercados)
     if (productData.isValid) {
@@ -149,7 +145,7 @@ async function main() {
         },
       });
 
-      if (productData.id !== 'product-5') {
+      if (productData.name !== 'Café Torrado 500g') {
         await prisma.market.update({
           where: { id: supermarket2.id },
           data: {
@@ -160,7 +156,7 @@ async function main() {
         });
       }
 
-      if (['product-1', 'product-3', 'product-5'].includes(productData.id)) {
+      if (['Arroz Integral 1kg', 'Óleo de Soja 900ml', 'Café Torrado 500g'].includes(productData.name)) {
         await prisma.market.update({
           where: { id: supermarket3.id },
           data: {
@@ -207,39 +203,49 @@ async function main() {
   });
 
   // Adicionar alguns itens na lista de compras do usuário
-  await prisma.itemListaDeCompra.upsert({
-    where: {
-      userId_productId: {
-        userId: user.id,
-        productId: 'product-1',
+  const arrozProduct = createdProducts.find(p => p.name === 'Arroz Integral 1kg');
+  const feijaoProduct = createdProducts.find(p => p.name === 'Feijão Preto 1kg');
+  
+  if (arrozProduct) {
+    await prisma.itemListaDeCompra.upsert({
+      where: {
+        userId_productId: {
+          userId: user.id,
+          productId: arrozProduct.id,
+        },
       },
-    },
-    update: {},
-    create: {
-      userId: user.id,
-      productId: 'product-1',
-      quantity: 2,
-      isSelected: true,
-    },
-  });
+      update: {},
+      create: {
+        userId: user.id,
+        productId: arrozProduct.id,
+        quantity: 2,
+        isSelected: true,
+      },
+    });
+  }
 
-  await prisma.itemListaDeCompra.upsert({
-    where: {
-      userId_productId: {
-        userId: user.id,
-        productId: 'product-2',
+  if (feijaoProduct) {
+    await prisma.itemListaDeCompra.upsert({
+      where: {
+        userId_productId: {
+          userId: user.id,
+          productId: feijaoProduct.id,
+        },
       },
-    },
-    update: {},
-    create: {
-      userId: user.id,
-      productId: 'product-2',
-      quantity: 1,
-      isSelected: false,
-    },
-  });
+      update: {},
+      create: {
+        userId: user.id,
+        productId: feijaoProduct.id,
+        quantity: 1,
+        isSelected: false,
+      },
+    });
+  }
 
   // Criar uma compra finalizada histórica
+  const oleoProduct = createdProducts.find(p => p.name === 'Óleo de Soja 900ml');
+  const acucarProduct = createdProducts.find(p => p.name === 'Açúcar Cristal 1kg');
+  
   const purchase = await prisma.compraFinalizada.create({
     data: {
       userId: user.id,
@@ -250,19 +256,19 @@ async function main() {
             productName: 'Arroz Integral 1kg',
             priceAtTime: 8.99,
             quantity: 2,
-            productId: 'product-1',
+            productId: arrozProduct?.id || null,
           },
           {
             productName: 'Óleo de Soja 900ml',
             priceAtTime: 4.99,
             quantity: 1,
-            productId: 'product-3',
+            productId: oleoProduct?.id || null,
           },
           {
             productName: 'Açúcar Cristal 1kg',
             priceAtTime: 3.5, // Preço histórico diferente
             quantity: 1,
-            productId: 'product-4',
+            productId: acucarProduct?.id || null,
           },
         ],
       },
@@ -275,7 +281,7 @@ async function main() {
   console.log(
     `🏪 Mercados: ${supermarket1.name}, ${supermarket2.name}, ${supermarket3.name}`,
   );
-  console.log(`📦 Produtos: ${products.length} produtos criados`);
+  console.log(`📦 Produtos: ${createdProducts.length} produtos criados`);
   console.log(`⭐ Avaliações: 2 avaliações criadas`);
   console.log(`🛒 Lista de compras: 2 itens na lista do usuário`);
   console.log(`💰 Compras: 1 compra histórica criada`);

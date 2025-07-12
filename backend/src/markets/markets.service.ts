@@ -213,7 +213,7 @@ export class MarketsService {
     longitude: number,
     radiusKm: number = 10,
   ): Promise<MarketResponseDto[]> {
-    // Para SQLite, faremos um filtro simples baseado em coordenadas
+    // filtro simples baseado em coordenadas
     // Em produção, seria melhor usar uma extensão de geo-localização
     const markets = await this.prisma.market.findMany({
       include: {

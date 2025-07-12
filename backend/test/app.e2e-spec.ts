@@ -205,7 +205,9 @@ describe('AppController (e2e)', () => {
 
     it('/products/search with all parameters (GET)', async () => {
       const response = await request(app.getHttpServer())
-        .get('/products?name=test&sortBy=price&sortOrder=asc&userLatitude=-15.7942&userLongitude=-47.8822')
+        .get(
+          '/products?name=test&sortBy=price&sortOrder=asc&userLatitude=-15.7942&userLongitude=-47.8822',
+        )
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
