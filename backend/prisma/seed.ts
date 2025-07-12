@@ -156,7 +156,13 @@ async function main() {
         });
       }
 
-      if (['Arroz Integral 1kg', 'Óleo de Soja 900ml', 'Café Torrado 500g'].includes(productData.name)) {
+      if (
+        [
+          'Arroz Integral 1kg',
+          'Óleo de Soja 900ml',
+          'Café Torrado 500g',
+        ].includes(productData.name)
+      ) {
         await prisma.market.update({
           where: { id: supermarket3.id },
           data: {
@@ -203,9 +209,13 @@ async function main() {
   });
 
   // Adicionar alguns itens na lista de compras do usuário
-  const arrozProduct = createdProducts.find(p => p.name === 'Arroz Integral 1kg');
-  const feijaoProduct = createdProducts.find(p => p.name === 'Feijão Preto 1kg');
-  
+  const arrozProduct = createdProducts.find(
+    (p) => p.name === 'Arroz Integral 1kg',
+  );
+  const feijaoProduct = createdProducts.find(
+    (p) => p.name === 'Feijão Preto 1kg',
+  );
+
   if (arrozProduct) {
     await prisma.itemListaDeCompra.upsert({
       where: {
@@ -243,9 +253,13 @@ async function main() {
   }
 
   // Criar uma compra finalizada histórica
-  const oleoProduct = createdProducts.find(p => p.name === 'Óleo de Soja 900ml');
-  const acucarProduct = createdProducts.find(p => p.name === 'Açúcar Cristal 1kg');
-  
+  const oleoProduct = createdProducts.find(
+    (p) => p.name === 'Óleo de Soja 900ml',
+  );
+  const acucarProduct = createdProducts.find(
+    (p) => p.name === 'Açúcar Cristal 1kg',
+  );
+
   const purchase = await prisma.compraFinalizada.create({
     data: {
       userId: user.id,
