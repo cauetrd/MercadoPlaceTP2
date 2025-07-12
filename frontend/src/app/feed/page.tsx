@@ -1,18 +1,11 @@
 "use client";
 
+import { apiService } from "@/service/api/api";
+import { ProductResponseDto } from "@/service/api/api.types";
 import { useEffect, useState } from "react";
 
 // Interface baseada na estrutura da API do backend
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  currentPrice: number;
-  imageUrl: string;
-  isValid: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+interface Product extends ProductResponseDto {}
 
 // Componente de Item do Produto
 function ProductItem({ product }: { product: Product }) {
@@ -49,7 +42,7 @@ function ProductItem({ product }: { product: Product }) {
           {product.name}
         </h3>
         <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-          {product.description}
+          {product.description || "Sem descrição disponível"}
         </p>
 
         {/* Data de atualização */}
@@ -98,106 +91,59 @@ export default function FeedPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "price">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [error, setError] = useState<string | null>(null);
 
-  // Dados mock para demonstração (já que não vamos usar axios ainda)
-  useEffect(() => {
-    // Simulando carregamento da API
-    const mockProducts: Product[] = [
-      {
-        id: "1",
-        name: "Arroz Integral 1kg",
-        description:
-          "Arroz integral orgânico de alta qualidade, rico em fibras e nutrientes essenciais.",
-        currentPrice: 8.99,
-        imageUrl:
-          "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400",
-        isValid: true,
-        createdAt: "2024-01-01T00:00:00.000Z",
-        updatedAt: "2024-01-01T00:00:00.000Z",
-      },
-      {
-        id: "2",
-        name: "Feijão Preto 1kg",
-        description:
-          "Feijão preto selecionado, fonte de proteína vegetal e ferro.",
-        currentPrice: 6.5,
-        imageUrl:
-          "https://images.unsplash.com/photo-1583327224991-db9b8c5c8b2d?w=400",
-        isValid: true,
-        createdAt: "2024-01-01T00:00:00.000Z",
-        updatedAt: "2024-01-01T00:00:00.000Z",
-      },
-      {
-        id: "3",
-        name: "Óleo de Soja 900ml",
-        description: "Óleo de soja refinado, ideal para cozinhar e frituras.",
-        currentPrice: 4.99,
-        imageUrl:
-          "https://images.unsplash.com/photo-1601158935942-cb80dba60df0?w=400",
-        isValid: true,
-        createdAt: "2024-01-01T00:00:00.000Z",
-        updatedAt: "2024-01-01T00:00:00.000Z",
-      },
-      {
-        id: "4",
-        name: "Açúcar Cristal 1kg",
-        description:
-          "Açúcar cristal refinado especial, perfeito para suas receitas.",
-        currentPrice: 3.5,
-        imageUrl:
-          "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400",
-        isValid: true,
-        createdAt: "2024-01-01T00:00:00.000Z",
-        updatedAt: "2024-01-01T00:00:00.000Z",
-      },
-      {
-        id: "5",
-        name: "Café Torrado 500g",
-        description:
-          "Café torrado e moído, sabor intenso para começar bem o dia.",
-        currentPrice: 12.99,
-        imageUrl:
-          "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=400",
-        isValid: true,
-        createdAt: "2024-01-01T00:00:00.000Z",
-        updatedAt: "2024-01-01T00:00:00.000Z",
-      },
-      {
-        id: "6",
-        name: "Macarrão Espaguete 500g",
-        description:
-          "Macarrão espaguete de sêmola de trigo durum, massa saborosa.",
-        currentPrice: 4.25,
-        imageUrl:
-          "https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?w=400",
-        isValid: true,
-        createdAt: "2024-01-01T00:00:00.000Z",
-        updatedAt: "2024-01-01T00:00:00.000Z",
-      },
-    ];
+  // Função para buscar produtos da API
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-    setTimeout(() => {
-      setProducts(mockProducts);
+      // Construir query string manualmente
+      const queryParams = new URLSearchParams();
+
+      if (searchTerm.trim()) {
+        queryParams.append("name", searchTerm.trim());
+      }
+
+      queryParams.append("sortBy", sortBy);
+      queryParams.append("sortOrder", sortOrder);
+
+      const queryString = queryParams.toString();
+      const url = queryString ? `/products?${queryString}` : "/products";
+
+      const response = await apiService.get(url);
+
+      // A API já retorna apenas produtos válidos, mas vamos garantir
+      const validProducts = Array.isArray(response)
+        ? response.filter((product: Product) => product.isValid)
+        : [];
+
+      setProducts(validProducts);
+    } catch (err) {
+      console.error("Erro ao buscar produtos:", err);
+      setError("Erro ao carregar produtos. Tente novamente.");
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
+  };
+
+  // Buscar produtos na inicialização
+  useEffect(() => {
+    fetchProducts();
   }, []);
 
-  // Filtrar e ordenar produtos
-  const filteredAndSortedProducts = products
-    .filter(
-      (product) =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      let result = 0;
-      if (sortBy === "name") {
-        result = a.name.localeCompare(b.name);
-      } else if (sortBy === "price") {
-        result = a.currentPrice - b.currentPrice;
-      }
-      return sortOrder === "asc" ? result : -result;
-    });
+  // Buscar produtos quando filtros mudarem (com debounce para o search)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchProducts();
+    }, 500); // 500ms de debounce para o search
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, sortBy, sortOrder]);
+
+  // Produtos já vêm filtrados e ordenados da API
+  const filteredAndSortedProducts = products;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -209,9 +155,44 @@ export default function FeedPage() {
               🛒 MercadoPlace - Feed de Produtos
             </h1>
             <div className="text-sm text-gray-500">
-              {products.length} produtos disponíveis
+              {loading
+                ? "Carregando..."
+                : `${products.length} produtos disponíveis`}
             </div>
           </div>
+          {error && (
+            <div className="mt-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-red-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm">{error}</p>
+                </div>
+                <div className="ml-auto pl-3">
+                  <button
+                    onClick={() => {
+                      setError(null);
+                      fetchProducts();
+                    }}
+                    className="text-red-600 hover:text-red-500 text-sm underline"
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
