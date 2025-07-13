@@ -4,7 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateMarketProductDto, MarketProductResponseDto, UpdateMarketProductDto } from './dto/market-product.dto';
+import {
+  CreateMarketProductDto,
+  MarketProductResponseDto,
+  UpdateMarketProductDto,
+} from './dto/market-product.dto';
 
 @Injectable()
 export class MarketProductService {

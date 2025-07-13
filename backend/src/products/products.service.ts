@@ -49,7 +49,8 @@ export class ProductsService {
   }
 
   async findAll(searchDto?: ProductSearchDto): Promise<ProductResponseDto[]> {
-    const { name, userLatitude, userLongitude, sortBy, sortOrder } = searchDto || {};
+    const { name, userLatitude, userLongitude, sortBy, sortOrder } =
+      searchDto || {};
 
     let where: any = {};
 
@@ -65,7 +66,14 @@ export class ProductsService {
     };
 
     if (sortBy && sortOrder) {
-      const validSortFields = ['id', 'name', 'description', 'imageUrl', 'createdAt', 'updatedAt'];
+      const validSortFields = [
+        'id',
+        'name',
+        'description',
+        'imageUrl',
+        'createdAt',
+        'updatedAt',
+      ];
       if (validSortFields.includes(sortBy)) {
         orderBy = {
           [sortBy]: sortOrder,
