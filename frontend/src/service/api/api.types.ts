@@ -69,13 +69,14 @@ export interface PriceHistory {
 }
 
 export interface ProductResponseDto extends BaseEntity {
+  id: string;
   name: string;
   description?: string | null;
   currentPrice: number;
   imageUrl?: string | null;
   isValid: boolean;
-  priceHistory?: PriceHistory[];
-  markets?: MarketResponseDto[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateMarketDto {

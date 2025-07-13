@@ -47,7 +47,6 @@ export class AuthService {
     // Gerar token JWT
     const payload = { sub: user.id, email: user.email, isAdmin: user.isAdmin };
     const access_token = this.jwtService.sign(payload);
-
     return {
       user: userWithoutPassword,
       access_token,

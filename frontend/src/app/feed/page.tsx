@@ -6,8 +6,18 @@ import { apiService } from "@/service/api/api";
 import { ProductResponseDto } from "@/service/api/api.types";
 import { useEffect, useState } from "react";
 
-// Interface baseada na estrutura da API do backend
-interface Product extends ProductResponseDto {}
+// Função utilitária para normalizar texto (remove acentos, converte para minúsculas, etc.)
+const normalizeText = (text: string): string => {
+  return text
+    .toLowerCase()
+    .normalize("NFD") // Decompõe caracteres acentuados
+    .replace(/[\u0300-\u036f]/g, "") // Remove os acentos
+    .replace(/[çÇ]/g, "c") // Corrige cedilha (tanto minúscula quanto maiúscula)
+    .replace(/[ñÑ]/g, "n") // Eñe espanhol
+    .replace(/[^a-z0-9\s]/g, "") // Remove caracteres especiais, mantém apenas letras, números e espaços
+    .replace(/\s+/g, " ") // Substitui múltiplos espaços por um único espaço
+    .trim(); // Remove espaços no início e fim
+};
 
 // Componente de Loading
 function LoadingCard() {
@@ -30,22 +40,23 @@ function LoadingCard() {
 
 // Página principal do Feed
 export default function FeedPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "price">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [error, setError] = useState<string | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] =
+    useState<ProductResponseDto | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Funções para lidar com ações dos produtos
-  const handleViewDetails = (product: Product) => {
+  const handleViewDetails = (product: ProductResponseDto) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = (product: ProductResponseDto) => {
     console.log("Adicionar ao carrinho:", product);
     // TODO: Implementar adição ao carrinho/lista de compras
   };
@@ -64,8 +75,9 @@ export default function FeedPage() {
       // Construir query string manualmente
       const queryParams = new URLSearchParams();
 
+      // Remover normalização da API - deixar a busca normalizada apenas no frontend
       if (searchTerm.trim()) {
-        queryParams.append("name", searchTerm.trim());
+        queryParams.append("name", searchTerm);
       }
 
       queryParams.append("sortBy", sortBy);
@@ -77,8 +89,15 @@ export default function FeedPage() {
       const response = await apiService.get(url);
 
       // A API já retorna apenas produtos válidos, mas vamos garantir
+      // Normalizar os dados dos produtos para busca consistente
       const validProducts = Array.isArray(response)
-        ? response.filter((product: Product) => product.isValid)
+        ? response
+            .filter((product: ProductResponseDto) => product.isValid)
+            .map((product: ProductResponseDto) => ({
+              ...product,
+              normalizedName: normalizeText(product.name),
+              normalizedDescription: normalizeText(product.description || ""),
+            }))
         : [];
 
       setProducts(validProducts);
@@ -104,8 +123,22 @@ export default function FeedPage() {
     return () => clearTimeout(timeoutId);
   }, [searchTerm, sortBy, sortOrder]);
 
-  // Produtos já vêm filtrados e ordenados da API
-  const filteredAndSortedProducts = products;
+  // Filtro adicional no frontend para busca mais refinada
+  const filteredAndSortedProducts = products.filter((product) => {
+    if (!searchTerm.trim()) return true;
+
+    const normalizedSearch = normalizeText(searchTerm);
+
+    // Usar versões normalizadas já processadas
+    const normalizedProductName = (product as any).normalizedName;
+    const normalizedProductDescription = (product as any).normalizedDescription;
+
+    // Busca tanto no nome quanto na descrição, normalizados
+    return (
+      normalizedProductName.includes(normalizedSearch) ||
+      normalizedProductDescription.includes(normalizedSearch)
+    );
+  });
 
   return (
     <>
@@ -130,7 +163,7 @@ export default function FeedPage() {
               <div className="text-sm text-gray-500">
                 {loading
                   ? "Carregando..."
-                  : `${products.length} produtos disponíveis`}
+                  : `${filteredAndSortedProducts.length} produtos disponíveis`}
               </div>
             </div>
             {error && (
@@ -195,12 +228,36 @@ export default function FeedPage() {
                   <input
                     id="search"
                     type="text"
-                    placeholder="Buscar produtos..."
+                    placeholder="Buscar produtos... (ex: açúcar, café, arroz)"
                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  )}
                 </div>
+                {searchTerm && (
+                  <div className="mt-1 text-xs text-gray-500">
+                    Buscando por: "{searchTerm}" (normalizado: "
+                    {normalizeText(searchTerm)}")
+                  </div>
+                )}
               </div>
 
               {/* Ordenação */}
@@ -266,6 +323,11 @@ export default function FeedPage() {
                 <p className="text-gray-500">
                   Tente ajustar seus filtros ou termos de busca.
                 </p>
+                {searchTerm && (
+                  <p className="text-gray-400 text-sm mt-2">
+                    Nenhum resultado para "{searchTerm}"
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -282,3 +344,4 @@ export default function FeedPage() {
     </>
   );
 }
+
