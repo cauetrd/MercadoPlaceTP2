@@ -50,6 +50,35 @@ export class ProductsController {
     return this.productsService.create(createProductDto, user.id);
   }
 
+  @Post('with-market')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Criar produto com mercado' })
+  @ApiResponse({
+    status: 201,
+    description: 'Produto e produto-mercado criados com sucesso',
+  })
+  async createWithMarket(
+    @Body()
+    createDto: {
+      name: string;
+      description?: string;
+      imageUrl?: string;
+      marketId: string;
+      price: number;
+    },
+    @CurrentUser() user: UserResponseDto,
+  ) {
+    const { marketId, price, ...productData } = createDto;
+    return this.productsService.createWithMarketProduct(
+      productData,
+      marketId,
+      price,
+      user.id,
+      user.isAdmin,
+    );
+  }
+
   @Get()
   @ApiOperation({ summary: 'Listar produtos (com filtros)' })
   @ApiResponse({

@@ -1,6 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsNumber, IsOptional, IsString, IsUrl } from 'class-validator';
+import {
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+} from 'class-validator';
 
 export class CreateProductDto {
   @ApiProperty({
@@ -51,6 +57,14 @@ export class UpdateProductDto {
   @IsOptional()
   @IsUrl()
   imageUrl?: string;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Se o produto está válido/aprovado',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isValid?: boolean;
 }
 
 export class ProductResponseDto {
@@ -74,6 +88,12 @@ export class ProductResponseDto {
     description: 'URL da imagem do produto',
   })
   imageUrl?: string | null;
+
+  @ApiProperty({
+    example: true,
+    description: 'Se o produto está válido/aprovado',
+  })
+  isValid: boolean;
 
   @ApiProperty({
     example: '2024-01-01T00:00:00.000Z',
