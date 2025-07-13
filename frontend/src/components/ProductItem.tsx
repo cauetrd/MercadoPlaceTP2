@@ -3,7 +3,6 @@ import { ProductResponseDto } from "@/service/api/api.types";
 // Interface para as props do componente
 interface ProductItemProps {
   product: ProductResponseDto;
-  onViewDetails?: (product: ProductResponseDto) => void;
   onAddToCart?: (product: ProductResponseDto) => void;
   showActions?: boolean;
 }
@@ -11,16 +10,8 @@ interface ProductItemProps {
 // Componente de Item do Produto
 export default function ProductItem({
   product,
-  onViewDetails,
   onAddToCart,
-  showActions = true,
 }: ProductItemProps) {
-  const handleViewDetails = () => {
-    if (onViewDetails) {
-      onViewDetails(product);
-    }
-  };
-
   const handleAddToCart = () => {
     if (onAddToCart) {
       onAddToCart(product);
@@ -48,10 +39,6 @@ export default function ProductItem({
             </svg>
           </div>
         )}
-        {/* Badge de preço */}
-        <div className="absolute top-3 right-3 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-          R$ {product.currentPrice.toFixed(2)}
-        </div>
       </div>
 
       {/* Conteúdo do produto */}
@@ -68,24 +55,12 @@ export default function ProductItem({
           Atualizado em{" "}
           {new Date(product.updatedAt).toLocaleDateString("pt-BR")}
         </div>
-
-        {/* Botões de ação */}
-        {showActions && (
-          <div className="flex gap-2">
-            <button
-              onClick={handleViewDetails}
-              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200"
-            >
-              Ver Detalhes
-            </button>
-            <button
-              onClick={handleAddToCart}
-              className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200"
-            >
-              🛒 Adicionar
-            </button>
-          </div>
-        )}
+        <button
+          onClick={handleAddToCart}
+          className="flex w-full justify-center bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md hover:cursor-pointer transition-colors duration-200"
+        >
+          Adicionar ao carrinho
+        </button>
       </div>
     </div>
   );

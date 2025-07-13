@@ -1,9 +1,9 @@
 "use client";
 
 import { apiService } from "@/service/api/api";
-import { CreateUserDto } from "@/service/api/api.types";
+import { AuthResponse, CreateUserDto } from "@/service/api/api.types";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState<CreateUserDto>({
@@ -15,7 +15,15 @@ export default function RegisterPage() {
     isAdmin: false,
   });
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (apiService.isAuthenticated()) {
+      router.push("/feed");
+    }
+  }, [router]);
 
   const getLocation = () => {
     if (!navigator.geolocation) {
@@ -57,25 +65,25 @@ export default function RegisterPage() {
     );
   };
 
-  const router = useRouter();
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+    setLoading(true);
 
     try {
-      if (formData) {
-        const response = await apiService.post("auth/register", formData);
-        if (response) {
-          localStorage.setItem("access_token", response.access_token);
-          console.log("Registration successful", response);
-          router.push("/feed");
-        } else {
-          setError("Registro falhou, tente novamente.");
-        }
+      const response = (await apiService.register(formData)) as AuthResponse;
+
+      if (response.access_token) {
+        console.log("Registration successful", response);
+        router.push("/feed");
+      } else {
+        setError("Registro falhou, tente novamente.");
       }
-    } catch (err) {
-      setError("Registro falhou, tente novamente.");
+    } catch (err: any) {
+      console.error("Registration error:", err);
+      setError(err.message || "Registro falhou, tente novamente.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -99,6 +107,7 @@ export default function RegisterPage() {
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
+              disabled={loading}
             />
           </div>
 
@@ -116,6 +125,7 @@ export default function RegisterPage() {
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
+              disabled={loading}
             />
           </div>
 
@@ -133,6 +143,7 @@ export default function RegisterPage() {
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
               }
+              disabled={loading}
             />
           </div>
 
@@ -144,9 +155,10 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={getLocation}
-                className="px-4 py-2 rounded-md font-medium transition-colors bg-blue-100 text-blue-700 hover:bg-blue-200"
+                disabled={loading}
+                className="px-4 py-2 hover:cursor-pointer rounded-md font-medium transition-colors bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:bg-gray-100 disabled:text-gray-500"
               >
-                "📍 Usar minha localização"
+                📍 Usar minha localização
               </button>
 
               {formData.latitude && formData.longitude && (
@@ -176,9 +188,10 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            className="rounded-md bg-blue-600 hover:bg-blue-700 text-white self-center px-6 py-2 font-bold transition-colors"
+            disabled={loading}
+            className="rounded-md hover:cursor-pointer bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white self-center px-6 py-2 font-bold transition-colors"
           >
-            Criar Conta
+            {loading ? "Criando conta..." : "Criar Conta"}
           </button>
         </form>
 

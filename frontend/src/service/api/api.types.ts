@@ -60,6 +60,7 @@ export interface ProductSearchDto {
   sortOrder?: "asc" | "desc";
   userLatitude?: number;
   userLongitude?: number;
+  marketId?: string;
 }
 
 export interface PriceHistory {
@@ -68,15 +69,31 @@ export interface PriceHistory {
   createdAt: string;
 }
 
+export interface MarketProductResponseDto extends BaseEntity {
+  marketId: string;
+  productId: string;
+  price: number;
+  lastPrice?: number | null;
+  isValid: boolean;
+  market?: MarketResponseDto;
+  product?: ProductResponseDto;
+}
+
+export interface CreateMarketProductDto {
+  marketId: string;
+  productId: string;
+  price: number;
+}
+
+export interface UpdateMarketProductDto {
+  price?: number;
+}
+
 export interface ProductResponseDto extends BaseEntity {
-  id: string;
   name: string;
   description?: string | null;
-  currentPrice: number;
   imageUrl?: string | null;
-  isValid: boolean;
-  createdAt: string;
-  updatedAt: string;
+  marketProducts?: MarketProductResponseDto[];
 }
 
 export interface CreateMarketDto {
@@ -97,8 +114,9 @@ export interface MarketResponseDto extends BaseEntity {
   name: string;
   latitude: number;
   longitude: number;
-  availableProducts?: ProductResponseDto[];
+  products?: MarketProductResponseDto[];
   reviews?: ReviewResponseDto[];
+  distance?: number;
 }
 
 export interface CreateReviewDto {
@@ -135,17 +153,13 @@ export interface MarketRatingResponse {
 
 export interface AddToShoppingListDto {
   productId: string;
-  quantity: number;
 }
 
 export interface UpdateShoppingListItemDto {
-  quantity?: number;
-  isSelected?: boolean;
+  // UserShoppingList only has userId and productId in schema
 }
 
 export interface ShoppingListItemResponseDto extends BaseEntity {
-  quantity: number;
-  isSelected: boolean;
   userId: string;
   productId: string;
   product?: ProductResponseDto;
@@ -160,19 +174,20 @@ export interface FinalizePurchaseDto {
   selectedItemIds: string[];
 }
 
-export interface PurchasedItem {
-  id: string;
-  productName: string;
-  priceAtTime: number;
-  quantity: number;
-  productId?: string | null;
-  product?: ProductResponseDto | null;
+export interface PurchasedProductResponseDto extends BaseEntity {
+  userId: string;
+  productId: string;
+  marketId: string;
+  purchaseId: string;
+  price: number;
+  user?: UserResponseDto;
+  product?: ProductResponseDto;
+  market?: MarketResponseDto;
 }
 
-export interface PurchaseHistoryResponse {
-  id: string;
-  totalCost: number;
+export interface PurchaseHistoryResponse extends BaseEntity {
   userId: string;
-  createdAt: string;
-  purchasedItems: PurchasedItem[];
+  totalPrice: number;
+  products: PurchasedProductResponseDto[];
+  user?: UserResponseDto;
 }
