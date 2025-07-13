@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsBoolean,
   IsEmail,
   IsNumber,
   IsOptional,
@@ -9,11 +8,17 @@ import {
 } from 'class-validator';
 
 export class CreateUserDto {
-  @ApiProperty({ example: 'user@example.com', description: 'Email do usuário' })
+  @ApiProperty({
+    example: 'user@example.com',
+    description: 'Email do usuário',
+  })
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'João Silva', description: 'Nome do usuário' })
+  @ApiProperty({
+    example: 'João Silva',
+    description: 'Nome completo do usuário',
+  })
   @IsString()
   name: string;
 
@@ -41,20 +46,12 @@ export class CreateUserDto {
   @IsOptional()
   @IsNumber()
   longitude?: number;
-
-  @ApiPropertyOptional({
-    example: false,
-    description: 'Se o usuário é administrador',
-  })
-  @IsOptional()
-  @IsBoolean()
-  isAdmin?: boolean;
 }
 
 export class UpdateUserDto {
   @ApiPropertyOptional({
-    example: 'João Santos',
-    description: 'Nome do usuário',
+    example: 'João Silva Santos',
+    description: 'Nome completo do usuário',
   })
   @IsOptional()
   @IsString()
@@ -87,25 +84,33 @@ export class UpdateUserDto {
   longitude?: number;
 }
 
-export class LoginDto {
-  @ApiProperty({ example: 'user@example.com', description: 'Email do usuário' })
-  @IsEmail()
-  email: string;
-
-  @ApiProperty({ example: 'password123', description: 'Senha do usuário' })
-  @IsString()
-  password: string;
-}
-
 export class UserResponseDto {
   @ApiProperty({ example: 'uuid-string', description: 'ID único do usuário' })
   id: string;
 
-  @ApiProperty({ example: 'user@example.com', description: 'Email do usuário' })
+  @ApiProperty({
+    example: 'user@example.com',
+    description: 'Email do usuário',
+  })
   email: string;
 
-  @ApiProperty({ example: 'João Silva', description: 'Nome do usuário' })
+  @ApiProperty({
+    example: 'João Silva',
+    description: 'Nome completo do usuário',
+  })
   name: string;
+
+  @ApiProperty({
+    example: false,
+    description: 'Se o usuário é administrador',
+  })
+  isAdmin: boolean;
+
+  @ApiProperty({
+    example: 25,
+    description: 'Pontos do usuário',
+  })
+  points: number;
 
   @ApiPropertyOptional({
     example: -15.7942,
@@ -118,12 +123,6 @@ export class UserResponseDto {
     description: 'Longitude da localização do usuário',
   })
   longitude?: number | null;
-
-  @ApiProperty({ example: false, description: 'Se o usuário é administrador' })
-  isAdmin: boolean;
-
-  @ApiProperty({ example: 100, description: 'Pontos do usuário' })
-  points: number;
 
   @ApiProperty({
     example: '2024-01-01T00:00:00.000Z',

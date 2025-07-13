@@ -2,11 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  CreateUserDto,
-  LoginDto,
-  UserResponseDto,
-} from '../users/dto/user.dto';
+import { AuthResponseDto, LoginDto, RegisterDto } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -15,10 +11,8 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(
-    createUserDto: CreateUserDto,
-  ): Promise<{ user: UserResponseDto; access_token: string }> {
-    const { email, password, ...userData } = createUserDto;
+  async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
+    const { email, name, password, latitude, longitude } = registerDto;
 
     // Verificar se o usuário já existe
     const existingUser = await this.prisma.user.findUnique({
@@ -26,7 +20,7 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new UnauthorizedException('Email já está em uso');
+      throw new UnauthorizedException('Usuário já existe');
     }
 
     // Hash da senha
@@ -36,26 +30,33 @@ export class AuthService {
     const user = await this.prisma.user.create({
       data: {
         email,
+        name,
         password: hashedPassword,
-        ...userData,
+        latitude,
+        longitude,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isAdmin: true,
+        points: true,
+        latitude: true,
+        longitude: true,
       },
     });
 
-    // Remover senha do retorno
-    const { password: _, ...userWithoutPassword } = user;
-
     // Gerar token JWT
-    const payload = { sub: user.id, email: user.email, isAdmin: user.isAdmin };
+    const payload = { email: user.email, sub: user.id };
     const access_token = this.jwtService.sign(payload);
+
     return {
-      user: userWithoutPassword,
       access_token,
+      user,
     };
   }
 
-  async login(
-    loginDto: LoginDto,
-  ): Promise<{ user: UserResponseDto; access_token: string }> {
+  async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     const { email, password } = loginDto;
 
     // Buscar usuário
@@ -73,29 +74,36 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
-    // Remover senha do retorno
-    const { password: _, ...userWithoutPassword } = user;
-
     // Gerar token JWT
-    const payload = { sub: user.id, email: user.email, isAdmin: user.isAdmin };
+    const payload = { email: user.email, sub: user.id };
     const access_token = this.jwtService.sign(payload);
 
     return {
-      user: userWithoutPassword,
       access_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isAdmin: user.isAdmin,
+        points: user.points,
+        latitude: user.latitude,
+        longitude: user.longitude,
+      },
     };
   }
 
-  async validateUser(userId: string): Promise<UserResponseDto | null> {
-    const user = await this.prisma.user.findUnique({
+  async validateUser(userId: string) {
+    return this.prisma.user.findUnique({
       where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isAdmin: true,
+        points: true,
+        latitude: true,
+        longitude: true,
+      },
     });
-
-    if (!user) {
-      return null;
-    }
-
-    const { password: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
   }
 }

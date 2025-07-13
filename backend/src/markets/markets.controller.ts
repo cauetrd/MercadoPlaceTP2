@@ -123,43 +123,4 @@ export class MarketsController {
   remove(@Param('id') id: string) {
     return this.marketsService.remove(id);
   }
-
-  @Post(':id/products/:productId')
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Adicionar produto ao mercado (Admin)' })
-  @ApiResponse({
-    status: 200,
-    description: 'Produto adicionado ao mercado',
-    type: MarketResponseDto,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Mercado ou produto não encontrado',
-  })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
-  addProduct(
-    @Param('id') marketId: string,
-    @Param('productId') productId: string,
-  ) {
-    return this.marketsService.addProduct(marketId, productId);
-  }
-
-  @Delete(':id/products/:productId')
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Remover produto do mercado (Admin)' })
-  @ApiResponse({
-    status: 200,
-    description: 'Produto removido do mercado',
-    type: MarketResponseDto,
-  })
-  @ApiResponse({ status: 404, description: 'Mercado não encontrado' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
-  removeProduct(
-    @Param('id') marketId: string,
-    @Param('productId') productId: string,
-  ) {
-    return this.marketsService.removeProduct(marketId, productId);
-  }
 }

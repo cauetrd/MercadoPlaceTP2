@@ -1,29 +1,71 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
-import { UpdateUserDto, UserResponseDto } from './dto/user.dto';
+import { CreateUserDto, UpdateUserDto, UserResponseDto } from './dto/user.dto';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
+  async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
+    const { password, ...userData } = createUserDto;
+
+    // Hash da senha
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await this.prisma.user.create({
+      data: {
+        ...userData,
+        password: hashedPassword,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isAdmin: true,
+        points: true,
+        latitude: true,
+        longitude: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return user;
+  }
+
+  async findAll(): Promise<UserResponseDto[]> {
+    return this.prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isAdmin: true,
+        points: true,
+        latitude: true,
+        longitude: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
   async findOne(id: string): Promise<UserResponseDto> {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      include: {
-        shoppingList: {
-          include: {
-            product: true,
-          },
-        },
-        completedPurchases: {
-          include: {
-            purchasedItems: true,
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-        },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isAdmin: true,
+        points: true,
+        latitude: true,
+        longitude: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
 
@@ -31,8 +73,7 @@ export class UsersService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    const { password: _, ...userWithoutPassword } = user;
-    return userWithoutPassword as any;
+    return user;
   }
 
   async update(
@@ -45,47 +86,63 @@ export class UsersService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    const updateData: any = { ...updateUserDto };
+    const { password, ...updateData } = updateUserDto;
 
-    // Se há uma nova senha, fazer hash
-    if (updateUserDto.password) {
-      updateData.password = await bcrypt.hash(updateUserDto.password, 10);
-    }
+    // Se a senha foi fornecida, fazer hash dela
+    const hashedPassword = password
+      ? await bcrypt.hash(password, 10)
+      : undefined;
 
     const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: updateData,
-    });
-
-    const { password: _, ...userWithoutPassword } = updatedUser;
-    return userWithoutPassword;
-  }
-
-  async getUserPurchaseHistory(userId: string) {
-    const purchases = await this.prisma.compraFinalizada.findMany({
-      where: { userId },
-      include: {
-        purchasedItems: {
-          include: {
-            product: true,
-          },
-        },
+      data: {
+        ...updateData,
+        ...(hashedPassword && { password: hashedPassword }),
       },
-      orderBy: {
-        createdAt: 'desc',
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isAdmin: true,
+        points: true,
+        latitude: true,
+        longitude: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
 
-    return purchases;
+    return updatedUser;
   }
 
-  async addPointsToUser(userId: string, points: number = 1) {
+  async remove(id: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    await this.prisma.user.delete({ where: { id } });
+  }
+
+  async updatePoints(id: string, points: number): Promise<UserResponseDto> {
     return this.prisma.user.update({
-      where: { id: userId },
+      where: { id },
       data: {
         points: {
           increment: points,
         },
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isAdmin: true,
+        points: true,
+        latitude: true,
+        longitude: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
   }
