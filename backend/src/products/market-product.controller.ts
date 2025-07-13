@@ -177,4 +177,31 @@ export class MarketProductController {
   remove(@Param('id') id: string) {
     return this.marketProductService.remove(id);
   }
+
+  @Get('product/:productId')
+@ApiOperation({ summary: 'Listar todos os preços de um produto em diferentes mercados' })
+@ApiResponse({
+  status: 200,
+  description: 'Lista de preços do produto por mercado',
+  type: [MarketProductResponseDto],
+})
+@ApiResponse({
+  status: 404,
+  description: 'Produto não encontrado',
+})
+getByProductId(@Param('productId') productId: string) {
+  return this.marketProductService.findByProductId(productId);
+}
+
+@Post('/subtotals/by-market')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+@ApiOperation({ summary: 'Retorna os subtotais por mercado com base na lista de produtos fornecida' })
+async getMarketSubtotalsByProductIds(
+  @Body() body: { productIds: string[] }
+) {
+  return this.marketProductService.getSubtotalsByProductIds(body.productIds);
+}
+
+
 }

@@ -190,6 +190,7 @@ export default function FeedPage() {
       {/* Filtros e Busca */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <ToastContainer
+          aria-label={"Notificações"}
           position="bottom-right"
           autoClose={5000}
           hideProgressBar={false}
