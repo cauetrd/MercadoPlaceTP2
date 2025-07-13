@@ -2,6 +2,7 @@
 
 import Header from "@/components/Header";
 import ProductItem from "@/components/ProductItem";
+import CreateProductModal from "@/components/createProduct";
 import { apiService } from "@/service/api/api";
 import { ProductResponseDto } from "@/service/api/api.types";
 import { useEffect, useState } from "react";
@@ -47,6 +48,7 @@ export default function FeedPage() {
   const [sortBy, setSortBy] = useState<"name" | "createdAt">("name");
   const [error, setError] = useState<string | null>(null);
   const [cartRefreshTrigger, setCartRefreshTrigger] = useState(0);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const notify = (message: string) =>
     toast.info(message, {
       position: "bottom-right",
@@ -73,6 +75,11 @@ export default function FeedPage() {
       console.error("Erro ao adicionar produto à lista:", error);
       notify("Erro ao adicionar produto à lista. Tente novamente.");
     }
+  };
+
+  const handleProductCreated = () => {
+    // Refresh the products list when a new product is created
+    fetchProducts();
   };
 
   // Função para buscar produtos da API
@@ -257,7 +264,7 @@ export default function FeedPage() {
               )}
             </div>
 
-            {/* Ordenação */}
+            {/* Ordenação e Criar Produto */}
             <div className="flex gap-2">
               <select
                 value={sortBy}
@@ -269,6 +276,13 @@ export default function FeedPage() {
                 <option value="name">Ordenar por Nome</option>
                 <option value="createdAt">Ordenar por Data</option>
               </select>
+
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="px-4 py-2 bg-green-600 hover:cursor-pointer text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+              >
+                Criar Produto
+              </button>
             </div>
           </div>
         </div>
@@ -318,6 +332,13 @@ export default function FeedPage() {
           )}
         </div>
       </div>
+
+      {/* Modal de Criação de Produto */}
+      <CreateProductModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onProductCreated={handleProductCreated}
+      />
     </>
   );
 }

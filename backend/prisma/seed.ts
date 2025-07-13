@@ -6,15 +6,54 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seeding...');
 
-  // Clean existing data
-  await prisma.userShoppingList.deleteMany();
-  await prisma.purchasedProduct.deleteMany();
-  await prisma.purchase.deleteMany();
-  await prisma.reviewMarket.deleteMany();
-  await prisma.marketProduct.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.product.deleteMany();
-  await prisma.market.deleteMany();
+  // Clean existing data - Try/catch for tables that might not exist
+  try {
+    await prisma.userShoppingList.deleteMany();
+  } catch (e) {
+    console.log('UserShoppingList table cleanup skipped (table may not exist)');
+  }
+
+  try {
+    await prisma.purchasedProduct.deleteMany();
+  } catch (e) {
+    console.log('PurchasedProduct table cleanup skipped (table may not exist)');
+  }
+
+  try {
+    await prisma.purchase.deleteMany();
+  } catch (e) {
+    console.log('Purchase table cleanup skipped (table may not exist)');
+  }
+
+  try {
+    await prisma.reviewMarket.deleteMany();
+  } catch (e) {
+    console.log('ReviewMarket table cleanup skipped (table may not exist)');
+  }
+
+  try {
+    await prisma.marketProduct.deleteMany();
+  } catch (e) {
+    console.log('MarketProduct table cleanup skipped (table may not exist)');
+  }
+
+  try {
+    await prisma.user.deleteMany();
+  } catch (e) {
+    console.log('User table cleanup skipped (table may not exist)');
+  }
+
+  try {
+    await prisma.product.deleteMany();
+  } catch (e) {
+    console.log('Product table cleanup skipped (table may not exist)');
+  }
+
+  try {
+    await prisma.market.deleteMany();
+  } catch (e) {
+    console.log('Market table cleanup skipped (table may not exist)');
+  }
 
   // Create Users
   const adminUser = await prisma.user.create({
@@ -61,42 +100,47 @@ async function main() {
       data: {
         name: 'Arroz Integral 1kg',
         description: 'Arroz integral orgânico, rico em fibras e nutrientes',
-        imageUrl: 'https://example.com/arroz-integral.jpg',
+        imageUrl:
+          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ-fCaWrQ5r9l0MJD3WeDdcWQrSAc9AmQDGIA&s',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Feijão Preto 1kg',
         description: 'Feijão preto tradicional, fonte de proteína vegetal',
-        imageUrl: 'https://example.com/feijao-preto.jpg',
+        imageUrl: 'https://d3gdr9n5lqb5z7.cloudfront.net/fotos/1184.webp',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Leite Integral 1L',
         description: 'Leite integral pasteurizado, rico em cálcio',
-        imageUrl: 'https://example.com/leite-integral.jpg',
+        imageUrl:
+          'https://superprix.vteximg.com.br/arquivos/ids/208297/7898215151708--1-.jpg?v=637916015363630000',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Pão Francês',
         description: 'Pão francês tradicional, fresquinho',
-        imageUrl: 'https://example.com/pao-frances.jpg',
+        imageUrl:
+          'https://cdn.2rscms.com.br/imgcache/5054/uploads/5054/layout/Linha%20Gold%20Paes/pao-frances-12h.png.webp',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Banana Nanica 1kg',
         description: 'Banana nanica madura, rica em potássio',
-        imageUrl: 'https://example.com/banana-nanica.jpg',
+        imageUrl:
+          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJItgpBcBYvvRQAgfTapDtbZBltTfri9BCDw&s',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Maçã Fuji 1kg',
         description: 'Maçã fuji doce e crocante, importada',
-        imageUrl: 'https://example.com/maca-fuji.jpg',
+        imageUrl:
+          'https://acdn-us.mitiendanube.com/stores/746/397/products/maca-fuji1-d895cc170cce90621b15221694779422-640-0.jpg',
       },
     }),
   ]);

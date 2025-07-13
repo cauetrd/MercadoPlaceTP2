@@ -12,7 +12,6 @@ export default function RegisterPage() {
     password: "",
     latitude: 0,
     longitude: 0,
-    isAdmin: false,
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -71,6 +70,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
+      console.log("Submitting registration with data:", formData);
       const response = (await apiService.register(formData)) as AuthResponse;
 
       if (response.access_token) {
