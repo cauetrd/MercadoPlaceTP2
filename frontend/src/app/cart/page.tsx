@@ -1,234 +1,258 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import Header from "@/components/Header";
 import { apiService } from "@/service/api/api";
+import { ShoppingListItemResponseDto } from "@/service/api/api.types";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast, ToastContainer } from "react-toastify";
 
-interface Product {
-  id: string;
-  name: string;
-  description?: string;
-  currentPrice: number;
-  imageUrl?: string;
-  isValid: boolean;
-}
-
-interface ShoppingListItem {
-  id: string;
-  quantity: number;
-  isSelected: boolean;
-  productId: string;
-  product: Product;
-}
-
-interface SelectedTotal {
-  total: number;
-  itemCount: number;
-}
-
-export default function ShoppingCartPage() {
-  const [items, setItems] = useState<ShoppingListItem[]>([]);
-  const [selectedTotal, setSelectedTotal] = useState<SelectedTotal>({
-    total: 0,
-    itemCount: 0,
-  });
-  const [loading, setLoading] = useState(false);
+export default function CartPage() {
+  const [cartItems, setCartItems] = useState<ShoppingListItemResponseDto[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [finalizing, setFinalizing] = useState(false);
+  const router = useRouter();
 
-  // Buscar itens da lista de compras
-  const fetchItems = async () => {
-    setLoading(true);
-    setError(null);
+  // Fetch cart items
+  const fetchCartItems = async () => {
     try {
-      const data = await apiService.get("/shopping-list");
-      setItems(data);
+      setLoading(true);
+      setError(null);
+      const response = await apiService.get("/shopping-list");
+      setCartItems(Array.isArray(response) ? response : []);
     } catch (err) {
-      setError("Erro ao carregar a lista de compras.");
+      console.error("Erro ao carregar carrinho:", err);
+      setError("Erro ao carregar carrinho. Tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Buscar total de itens selecionados
-  const fetchSelectedTotal = async () => {
+  // Remove item from cart
+  const removeFromCart = async (productId: string) => {
     try {
-      const data = await apiService.get("/shopping-list/total");
-      setSelectedTotal(data);
-    } catch {
-      // Ignorar erro silenciosamente
+      await apiService.delete(`/shopping-list/${productId}`);
+      setCartItems(cartItems.filter((item) => item.productId !== productId));
+      toast.success("Item removido do carrinho!");
+    } catch (error) {
+      console.error("Erro ao remover item do carrinho:", error);
+      toast.error("Erro ao remover item. Tente novamente.");
     }
   };
 
+  // Clear entire cart
+  const clearCart = async () => {
+    try {
+      await apiService.delete("/shopping-list");
+      setCartItems([]);
+      toast.success("Carrinho limpo!");
+    } catch (error) {
+      console.error("Erro ao limpar carrinho:", error);
+      toast.error("Erro ao limpar carrinho. Tente novamente.");
+    }
+  };
+
+  // Load cart on component mount
   useEffect(() => {
-    fetchItems();
-    fetchSelectedTotal();
+    fetchCartItems();
   }, []);
 
-  // Alternar seleção de item
-  const toggleSelect = async (itemId: string, isSelected: boolean) => {
-    try {
-      await apiService.patch(`/shopping-list/items/${itemId}`, {
-        isSelected,
-      });
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === itemId ? { ...item, isSelected } : item
-        )
-      );
-      fetchSelectedTotal();
-    } catch {
-      setError("Erro ao atualizar seleção do item.");
-    }
+  // Handle navigation to checkout
+  const handleGoToCheckout = () => {
+    router.push("/checkout");
   };
 
-  // Atualizar quantidade do item
-  const updateQuantity = async (itemId: string, quantity: number) => {
-    if (quantity < 1) return; // Evitar quantidades inválidas
-    try {
-      await apiService.patch(`/shopping-list/items/${itemId}`, { quantity });
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === itemId ? { ...item, quantity } : item
-        )
-      );
-      fetchSelectedTotal();
-    } catch {
-      setError("Erro ao atualizar quantidade.");
-    }
-  };
-
-  // Remover item da lista
-  const removeItem = async (itemId: string) => {
-    try {
-      await apiService.delete(`/shopping-list/items/${itemId}`);
-      setItems((prev) => prev.filter((item) => item.id !== itemId));
-      fetchSelectedTotal();
-    } catch {
-      setError("Erro ao remover item.");
-    }
-  };
-
-  // Finalizar compra
-  const finalizePurchase = async () => {
-    if (selectedTotal.itemCount === 0) {
-      alert("Selecione ao menos um item para finalizar a compra.");
-      return;
-    }
-    setFinalizing(true);
-    try {
-      await apiService.post("/shopping-list/finalize", {
-        selectedItemIds: items.filter((item) => item.isSelected).map((item) => item.id),
-      });
-      alert("Compra finalizada com sucesso!");
-      fetchItems();
-      fetchSelectedTotal();
-    } catch {
-      setError("Erro ao finalizar compra.");
-    } finally {
-      setFinalizing(false);
-    }
+  // Handle navigation back to feed
+  const handleBackToFeed = () => {
+    router.push("/feed");
   };
 
   return (
-    <main className="max-w-5xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Seu Carrinho de Compras</h1>
+    <>
+      <Header />
+
+      <ToastContainer
+        aria-label="Notificações"
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
 
       {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
-          {error}
-          <button
-            onClick={() => setError(null)}
-            className="ml-4 underline"
-            aria-label="Fechar erro"
-          >
-            Fechar
-          </button>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-5 w-5 text-red-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm">{error}</p>
+              </div>
+              <div className="ml-auto pl-3">
+                <button
+                  onClick={() => {
+                    setError(null);
+                    fetchCartItems();
+                  }}
+                  className="text-red-600 hover:text-red-500 hover:cursor-pointer text-sm underline"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {loading ? (
-        <p>Carregando itens...</p>
-      ) : items.length === 0 ? (
-        <p>Seu carrinho está vazio.</p>
-      ) : (
-        <table className="w-full border border-gray-300 rounded-md">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2 text-left">Selecionar</th>
-              <th className="p-2 text-left">Produto</th>
-              <th className="p-2 text-left">Quantidade</th>
-              <th className="p-2 text-left">Preço</th>
-              <th className="p-2 text-left">Subtotal</th>
-              <th className="p-2 text-left">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map(({ id, quantity, isSelected, product }) => (
-              <tr key={id} className="border-t border-gray-300">
-                <td className="p-2 text-center">
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={(e) => toggleSelect(id, e.target.checked)}
-                  />
-                </td>
-                <td className="p-2">
-                  <div className="flex items-center gap-4">
-                    {product.imageUrl ? (
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-gray-200 rounded" />
-                    )}
-                    <span>{product.name}</span>
-                  </div>
-                </td>
-                <td className="p-2">
-                  <input
-                    type="number"
-                    min={1}
-                    className="w-16 border rounded px-2 py-1"
-                    value={quantity}
-                    onChange={(e) =>
-                      updateQuantity(id, parseInt(e.target.value, 10))
-                    }
-                  />
-                </td>
-                <td className="p-2">R$ {product.currentPrice.toFixed(2)}</td>
-                <td className="p-2">
-                  R$ {(product.currentPrice * quantity).toFixed(2)}
-                </td>
-                <td className="p-2">
-                  <button
-                    className="text-red-600 hover:underline"
-                    onClick={() => removeItem(id)}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          ) : cartItems.length === 0 ? (
+            <div className="text-center py-12">
+              <svg
+                className="w-24 h-24 mx-auto mb-4 text-gray-300"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 2L3 7v11a1 1 0 001 1h12a1 1 0 001-1V7l-7-5zM9 9a1 1 0 112 0v4a1 1 0 11-2 0V9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Seu carrinho está vazio
+              </h3>
+              <p className="text-gray-500 mb-4">
+                Adicione produtos ao seu carrinho para continuar comprando.
+              </p>
+              <button
+                onClick={handleBackToFeed}
+                className="bg-blue-600 hover:cursor-pointer text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Continuar Comprando
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Itens no Carrinho ({cartItems.length})
+                </h2>
+                <button
+                  onClick={clearCart}
+                  className="text-red-600 hover:cursor-pointer hover:text-red-700 text-sm font-medium"
+                >
+                  Limpar Carrinho
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {cartItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg"
                   >
-                    Remover
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+                    {/* Product Image */}
+                    <div className="w-20 h-20 bg-gray-200 rounded-md flex-shrink-0">
+                      {item.product?.imageUrl ? (
+                        <img
+                          src={item.product.imageUrl}
+                          alt={item.product.name}
+                          className="w-full h-full object-cover rounded-md"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <svg
+                            className="w-8 h-8"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
 
-      <div className="mt-6 flex justify-between items-center">
-        <div>
-          <strong>Itens selecionados:</strong> {selectedTotal.itemCount} <br />
-          <strong>Total:</strong> R$ {selectedTotal.total.toFixed(2)}
+                    {/* Product Info */}
+                    <div className="flex-1">
+                      <h3 className="text-lg font-medium text-gray-900">
+                        {item.product?.name || "Produto sem nome"}
+                      </h3>
+                      <p className="text-gray-600 mt-1">
+                        {item.product?.description || "Sem descrição"}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        Adicionado em:{" "}
+                        {new Date(item.createdAt).toLocaleDateString("pt-BR")}
+                      </p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => removeFromCart(item.productId)}
+                        className="bg-red-50 text-red-600 hover:cursor-pointer hover:bg-red-100 px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8 border-t border-gray-200 pt-6">
+                <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                  <div className="flex items-center gap-4">
+                    <span className="text-lg font-medium text-gray-900">
+                      Total de itens: {cartItems.length}
+                    </span>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <button
+                      onClick={handleBackToFeed}
+                      className="bg-gray-100 text-gray-700 hover:cursor-pointer px-6 py-2 rounded-md hover:bg-gray-200 transition-colors"
+                    >
+                      Continuar Comprando
+                    </button>
+                    <button
+                      onClick={handleGoToCheckout}
+                      className="bg-green-600 text-white hover:cursor-pointer px-6 py-2 rounded-md hover:bg-green-700 transition-colors"
+                    >
+                      Finalizar Compra
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
-
-        <button
-          disabled={finalizing}
-          onClick={finalizePurchase}
-          className="bg-blue-600 text-white px-6 py-2 rounded disabled:opacity-50"
-        >
-          {finalizing ? "Finalizando..." : "Finalizar Compra"}
-        </button>
       </div>
-    </main>
+    </>
   );
 }

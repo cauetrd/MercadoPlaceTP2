@@ -1,82 +1,42 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsBoolean,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Min,
-} from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsArray, IsNotEmpty, IsString } from 'class-validator';
 
 export class AddToShoppingListDto {
-  @ApiProperty({ example: 'product-uuid', description: 'ID do produto' })
+  @ApiProperty({
+    description: 'Product ID to add to shopping list',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
   @IsString()
+  @IsNotEmpty()
   productId: string;
-
-  @ApiProperty({ example: 2, description: 'Quantidade do produto' })
-  @IsNumber()
-  @Min(1)
-  quantity: number;
 }
 
-export class UpdateShoppingListItemDto {
-  @ApiPropertyOptional({
-    example: 3,
-    description: 'Nova quantidade do produto',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  quantity?: number;
-
-  @ApiPropertyOptional({
-    example: true,
-    description: 'Se o item está selecionado para compra',
-  })
-  @IsOptional()
-  @IsBoolean()
-  isSelected?: boolean;
-}
-
-export class ShoppingListItemResponseDto {
-  @ApiProperty({ example: 'uuid-string', description: 'ID único do item' })
-  id: string;
-
-  @ApiProperty({ example: 2, description: 'Quantidade do produto' })
-  quantity: number;
-
+export class AddMultipleToShoppingListDto {
   @ApiProperty({
-    example: true,
-    description: 'Se o item está selecionado para compra',
+    description: 'List of product IDs to add to shopping list',
+    type: [String],
+    example: [
+      '550e8400-e29b-41d4-a716-446655440000',
+      '550e8400-e29b-41d4-a716-446655440001',
+    ],
   })
-  isSelected: boolean;
-
-  @ApiProperty({ example: 'user-uuid', description: 'ID do usuário' })
-  userId: string;
-
-  @ApiProperty({ example: 'product-uuid', description: 'ID do produto' })
-  productId: string;
-
-  @ApiProperty({
-    example: '2024-01-01T00:00:00.000Z',
-    description: 'Data de criação',
-  })
-  createdAt: Date;
-
-  @ApiProperty({
-    example: '2024-01-01T00:00:00.000Z',
-    description: 'Data de atualização',
-  })
-  updatedAt: Date;
-
-  @ApiPropertyOptional({ description: 'Dados do produto' })
-  product?: any;
-}
-
-export class FinalizePurchaseDto {
-  @ApiProperty({
-    example: ['item-id-1', 'item-id-2'],
-    description: 'IDs dos itens selecionados para finalizar compra',
-  })
+  @IsArray()
   @IsString({ each: true })
-  selectedItemIds: string[];
+  @IsNotEmpty({ each: true })
+  productIds: string[];
+}
+
+export class CompareShoppingListDto {
+  @ApiProperty({
+    description: 'List of product IDs to compare prices',
+    type: [String],
+    example: [
+      '550e8400-e29b-41d4-a716-446655440000',
+      '550e8400-e29b-41d4-a716-446655440001',
+    ],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  productIds: string[];
 }

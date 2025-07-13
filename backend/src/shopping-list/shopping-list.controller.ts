@@ -3,8 +3,9 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
-  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -16,127 +17,130 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { UserResponseDto } from '../users/dto/user.dto';
+import { PrismaService } from '../prisma/prisma.service';
 import {
+  AddMultipleToShoppingListDto,
   AddToShoppingListDto,
-  FinalizePurchaseDto,
-  ShoppingListItemResponseDto,
-  UpdateShoppingListItemDto,
+  CompareShoppingListDto,
 } from './dto/shopping-list.dto';
+import { ShoppingListCompareService } from './shopping-list-compare.service';
 import { ShoppingListService } from './shopping-list.service';
 
-@ApiTags('shopping-list')
+@ApiTags('Shopping List')
 @Controller('shopping-list')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class ShoppingListController {
-  constructor(private readonly shoppingListService: ShoppingListService) {}
+  constructor(
+    private readonly shoppingListService: ShoppingListService,
+    private readonly shoppingListCompareService: ShoppingListCompareService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  @Post('items')
-  @ApiOperation({ summary: 'Adicionar item à lista de compras' })
+  @Post()
+  @ApiOperation({ summary: 'Add product to shopping list' })
   @ApiResponse({
     status: 201,
-    description: 'Item adicionado com sucesso',
-    type: ShoppingListItemResponseDto,
+    description: 'Product added to shopping list successfully',
   })
-  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
-  addItem(
-    @CurrentUser() user: UserResponseDto,
+  @ApiResponse({
+    status: 404,
+    description: 'Product not found',
+  })
+  addToShoppingList(
     @Body() addToShoppingListDto: AddToShoppingListDto,
+    @CurrentUser() user: any,
   ) {
-    return this.shoppingListService.addItem(user.id, addToShoppingListDto);
+    return this.shoppingListService.addToShoppingList(
+      user.id,
+      addToShoppingListDto,
+    );
+  }
+
+  @Post('multiple')
+  @ApiOperation({ summary: 'Add multiple products to shopping list' })
+  @ApiResponse({
+    status: 201,
+    description: 'Products added to shopping list successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'One or more products not found',
+  })
+  addMultipleToShoppingList(
+    @Body() addMultipleDto: AddMultipleToShoppingListDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.shoppingListService.addMultipleToShoppingList(
+      user.id,
+      addMultipleDto,
+    );
   }
 
   @Get()
-  @ApiOperation({ summary: 'Obter lista de compras do usuário' })
+  @ApiOperation({ summary: 'Get user shopping list' })
   @ApiResponse({
     status: 200,
-    description: 'Lista de compras',
-    type: [ShoppingListItemResponseDto],
+    description: 'User shopping list retrieved successfully',
   })
-  getShoppingList(@CurrentUser() user: UserResponseDto) {
+  getShoppingList(@CurrentUser() user: any) {
     return this.shoppingListService.getShoppingList(user.id);
   }
 
-  @Get('total')
-  @ApiOperation({ summary: 'Obter total dos itens selecionados' })
+  @Post('compare')
+  @ApiOperation({ summary: 'Compare prices for products in shopping list' })
   @ApiResponse({
     status: 200,
-    description: 'Total dos itens selecionados',
-    schema: {
-      properties: {
-        total: { type: 'number' },
-        itemCount: { type: 'number' },
-      },
-    },
+    description: 'Price comparison completed successfully',
   })
-  getSelectedItemsTotal(@CurrentUser() user: UserResponseDto) {
-    return this.shoppingListService.getSelectedItemsTotal(user.id);
-  }
-
-  @Patch('items/:id')
-  @ApiOperation({ summary: 'Atualizar item da lista de compras' })
-  @ApiResponse({
-    status: 200,
-    description: 'Item atualizado com sucesso',
-    type: ShoppingListItemResponseDto,
-  })
-  @ApiResponse({ status: 404, description: 'Item não encontrado' })
-  updateItem(
-    @CurrentUser() user: UserResponseDto,
-    @Param('id') itemId: string,
-    @Body() updateDto: UpdateShoppingListItemDto,
+  async compareShoppingList(
+    @Body() compareDto: CompareShoppingListDto,
+    @CurrentUser() user: any,
   ) {
-    return this.shoppingListService.updateItem(user.id, itemId, updateDto);
-  }
+    const userInfo = await this.shoppingListService.getShoppingList(user.id);
+    const userLocation = await this.getUserLocation(user.id);
 
-  @Delete('items/:id')
-  @ApiOperation({ summary: 'Remover item da lista de compras' })
-  @ApiResponse({ status: 200, description: 'Item removido com sucesso' })
-  @ApiResponse({ status: 404, description: 'Item não encontrado' })
-  removeItem(
-    @CurrentUser() user: UserResponseDto,
-    @Param('id') itemId: string,
-  ) {
-    return this.shoppingListService.removeItem(user.id, itemId);
-  }
-
-  @Delete('clear')
-  @ApiOperation({ summary: 'Limpar toda a lista de compras' })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista de compras limpa com sucesso',
-  })
-  clearShoppingList(@CurrentUser() user: UserResponseDto) {
-    return this.shoppingListService.clearShoppingList(user.id);
-  }
-
-  @Post('finalize')
-  @ApiOperation({ summary: 'Finalizar compra dos itens selecionados' })
-  @ApiResponse({
-    status: 201,
-    description: 'Compra finalizada com sucesso',
-    schema: {
-      properties: {
-        id: { type: 'string' },
-        totalCost: { type: 'number' },
-        userId: { type: 'string' },
-        createdAt: { type: 'string', format: 'date-time' },
-        purchasedItems: { type: 'array' },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Nenhum item selecionado para finalizar compra',
-  })
-  finalizePurchase(
-    @CurrentUser() user: UserResponseDto,
-    @Body() finalizePurchaseDto: FinalizePurchaseDto,
-  ) {
-    return this.shoppingListService.finalizePurchase(
-      user.id,
-      finalizePurchaseDto,
+    return this.shoppingListCompareService.compareMarketPrices(
+      compareDto.productIds,
+      userLocation?.latitude || undefined,
+      userLocation?.longitude || undefined,
     );
+  }
+
+  private async getUserLocation(userId: string) {
+    const userData = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { latitude: true, longitude: true },
+    });
+    return userData;
+  }
+
+  @Delete(':productId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remove product from shopping list' })
+  @ApiResponse({
+    status: 204,
+    description: 'Product removed from shopping list successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Item not found in shopping list',
+  })
+  removeFromShoppingList(
+    @Param('productId') productId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.shoppingListService.removeFromShoppingList(user.id, productId);
+  }
+
+  @Delete()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Clear shopping list' })
+  @ApiResponse({
+    status: 204,
+    description: 'Shopping list cleared successfully',
+  })
+  clearShoppingList(@CurrentUser() user: any) {
+    return this.shoppingListService.clearShoppingList(user.id);
   }
 }

@@ -35,8 +35,9 @@ async function bootstrap() {
     .addTag('users', 'Gerenciamento de usuários')
     .addTag('products', 'Gerenciamento de produtos')
     .addTag('markets', 'Gerenciamento de mercados')
-    .addTag('shopping-list', 'Lista de compras')
-    .addTag('reviews', 'Avaliações de mercados')
+    .addTag('Review Market', 'Avaliações de mercados')
+    .addTag('Purchase', 'Gerenciamento de compras')
+    .addTag('Purchased Product', 'Produtos comprados')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

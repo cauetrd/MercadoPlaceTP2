@@ -1,12 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import {
-  IsBoolean,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUrl,
-} from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsNumber, IsOptional, IsString, IsUrl } from 'class-validator';
 
 export class CreateProductDto {
   @ApiProperty({
@@ -23,10 +17,6 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   description?: string;
-
-  @ApiProperty({ example: 15.99, description: 'Preço atual do produto' })
-  @IsNumber()
-  currentPrice: number;
 
   @ApiPropertyOptional({
     example: 'https://example.com/image.jpg',
@@ -55,28 +45,12 @@ export class UpdateProductDto {
   description?: string;
 
   @ApiPropertyOptional({
-    example: 17.99,
-    description: 'Preço atual do produto',
-  })
-  @IsOptional()
-  @IsNumber()
-  currentPrice?: number;
-
-  @ApiPropertyOptional({
     example: 'https://example.com/new-image.jpg',
     description: 'URL da imagem do produto',
   })
   @IsOptional()
   @IsUrl()
   imageUrl?: string;
-
-  @ApiPropertyOptional({
-    example: true,
-    description: 'Se o produto é válido/aprovado',
-  })
-  @IsOptional()
-  @IsBoolean()
-  isValid?: boolean;
 }
 
 export class ProductResponseDto {
@@ -95,17 +69,11 @@ export class ProductResponseDto {
   })
   description?: string | null;
 
-  @ApiProperty({ example: 15.99, description: 'Preço atual do produto' })
-  currentPrice: number;
-
   @ApiPropertyOptional({
     example: 'https://example.com/image.jpg',
     description: 'URL da imagem do produto',
   })
   imageUrl?: string | null;
-
-  @ApiProperty({ example: true, description: 'Se o produto é válido/aprovado' })
-  isValid: boolean;
 
   @ApiProperty({
     example: '2024-01-01T00:00:00.000Z',
@@ -130,33 +98,36 @@ export class ProductSearchDto {
   name?: string;
 
   @ApiPropertyOptional({
-    example: 'price',
-    description: 'Campo para ordenação (price, name)',
-  })
-  @IsOptional()
-  @IsString()
-  sortBy?: 'price' | 'name';
-
-  @ApiPropertyOptional({ example: 'asc', description: 'Direção da ordenação' })
-  @IsOptional()
-  @IsString()
-  sortOrder?: 'asc' | 'desc';
-
-  @ApiPropertyOptional({
     example: -15.7942,
-    description: 'Latitude para ordenação por distância',
+    description: 'Latitude do usuário',
   })
   @IsOptional()
   @IsNumber()
-  @Transform(({ value }) => parseFloat(value))
+  @Type(() => Number)
   userLatitude?: number;
 
   @ApiPropertyOptional({
     example: -47.8822,
-    description: 'Longitude para ordenação por distância',
+    description: 'Longitude do usuário',
   })
   @IsOptional()
   @IsNumber()
-  @Transform(({ value }) => parseFloat(value))
+  @Type(() => Number)
   userLongitude?: number;
+
+  @ApiPropertyOptional({
+    example: 'price',
+    description: 'Campo para ordenação',
+  })
+  @IsOptional()
+  @IsString()
+  sortBy?: string;
+
+  @ApiPropertyOptional({
+    example: 'asc',
+    description: 'Ordem de classificação',
+  })
+  @IsOptional()
+  @IsString()
+  sortOrder?: string;
 }

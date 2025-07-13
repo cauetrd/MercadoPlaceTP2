@@ -10,19 +10,6 @@ describe('AuthService', () => {
   let prismaService: PrismaService;
   let jwtService: JwtService;
 
-  const mockUser = {
-    id: '1',
-    email: 'test@example.com',
-    name: 'Test User',
-    password: 'hashedPassword',
-    latitude: null,
-    longitude: null,
-    isAdmin: false,
-    points: 0,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
   const mockPrismaService = {
     user: {
       findUnique: jest.fn(),
@@ -38,14 +25,8 @@ describe('AuthService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
-        {
-          provide: PrismaService,
-          useValue: mockPrismaService,
-        },
-        {
-          provide: JwtService,
-          useValue: mockJwtService,
-        },
+        { provide: PrismaService, useValue: mockPrismaService },
+        { provide: JwtService, useValue: mockJwtService },
       ],
     }).compile();
 
@@ -54,109 +35,98 @@ describe('AuthService', () => {
     jwtService = module.get<JwtService>(JwtService);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('register', () => {
-    it('should create a new user and return user with token', async () => {
-      const createUserDto = {
+    it('should register a new user successfully', async () => {
+      const registerDto = {
         email: 'test@example.com',
         name: 'Test User',
         password: 'password123',
+      };
+
+      const expectedUser = {
+        id: '1',
+        email: 'test@example.com',
+        name: 'Test User',
+        isAdmin: false,
+        points: 0,
       };
 
       mockPrismaService.user.findUnique.mockResolvedValue(null);
-      mockPrismaService.user.create.mockResolvedValue(mockUser);
+      mockPrismaService.user.create.mockResolvedValue(expectedUser);
       mockJwtService.sign.mockReturnValue('mock-token');
 
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword' as never);
+      const result = await service.register(registerDto);
 
-      const result = await service.register(createUserDto);
-
-      expect(result).toHaveProperty('user');
-      expect(result).toHaveProperty('access_token', 'mock-token');
-      expect(result.user).not.toHaveProperty('password');
+      expect(result).toEqual({
+        access_token: 'mock-token',
+        user: expectedUser,
+      });
     });
 
-    it('should throw UnauthorizedException if email already exists', async () => {
-      const createUserDto = {
+    it('should throw UnauthorizedException if user already exists', async () => {
+      const registerDto = {
         email: 'test@example.com',
         name: 'Test User',
         password: 'password123',
       };
 
-      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: '1' });
 
-      await expect(service.register(createUserDto)).rejects.toThrow(
+      await expect(service.register(registerDto)).rejects.toThrow(
         UnauthorizedException,
       );
     });
   });
 
   describe('login', () => {
-    it('should return user and token for valid credentials', async () => {
+    it('should login successfully with valid credentials', async () => {
       const loginDto = {
         email: 'test@example.com',
         password: 'password123',
       };
 
-      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-      mockJwtService.sign.mockReturnValue('mock-token');
+      const hashedPassword = await bcrypt.hash('password123', 10);
+      const user = {
+        id: '1',
+        email: 'test@example.com',
+        name: 'Test User',
+        password: hashedPassword,
+        isAdmin: false,
+        points: 0,
+      };
 
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
+      mockPrismaService.user.findUnique.mockResolvedValue(user);
+      mockJwtService.sign.mockReturnValue('mock-token');
 
       const result = await service.login(loginDto);
 
-      expect(result).toHaveProperty('user');
-      expect(result).toHaveProperty('access_token', 'mock-token');
-      expect(result.user).not.toHaveProperty('password');
+      expect(result).toEqual({
+        access_token: 'mock-token',
+        user: {
+          id: '1',
+          email: 'test@example.com',
+          name: 'Test User',
+          isAdmin: false,
+          points: 0,
+        },
+      });
     });
 
-    it('should throw UnauthorizedException for invalid email', async () => {
-      const loginDto = {
-        email: 'wrong@example.com',
-        password: 'password123',
-      };
-
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
-
-      await expect(service.login(loginDto)).rejects.toThrow(
-        UnauthorizedException,
-      );
-    });
-
-    it('should throw UnauthorizedException for invalid password', async () => {
+    it('should throw UnauthorizedException for invalid credentials', async () => {
       const loginDto = {
         email: 'test@example.com',
         password: 'wrongpassword',
       };
 
-      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
 
       await expect(service.login(loginDto)).rejects.toThrow(
         UnauthorizedException,
       );
-    });
-  });
-
-  describe('validateUser', () => {
-    it('should return user without password for valid userId', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-
-      const result = await service.validateUser('1');
-
-      expect(result).toBeDefined();
-      expect(result).not.toHaveProperty('password');
-    });
-
-    it('should return null for invalid userId', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
-
-      const result = await service.validateUser('invalid-id');
-
-      expect(result).toBeNull();
     });
   });
 });

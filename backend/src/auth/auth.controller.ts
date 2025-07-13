@@ -1,46 +1,23 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
-import {
-  CreateUserDto,
-  LoginDto,
-  UserResponseDto,
-} from '../users/dto/user.dto';
+import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { CurrentUser } from './current-user.decorator';
-import { JwtAuthGuard } from './jwt-auth.guard';
+import { AuthResponseDto, LoginDto, RegisterDto } from './dto/auth.dto';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  @ApiOperation({ summary: 'Registrar um novo usuário' })
+  @ApiOperation({ summary: 'Registrar novo usuário' })
   @ApiResponse({
     status: 201,
-    description: 'Usuário criado com sucesso',
-    schema: {
-      properties: {
-        user: { $ref: '#/components/schemas/UserResponseDto' },
-        access_token: { type: 'string' },
-      },
-    },
+    description: 'Usuário registrado com sucesso',
+    type: AuthResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Email já está em uso' })
-  async register(@Body() createUserDto: CreateUserDto) {
-    return this.authService.register(createUserDto);
+  @ApiResponse({ status: 401, description: 'Usuário já existe' })
+  async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
+    return this.authService.register(registerDto);
   }
 
   @Post('login')
@@ -49,29 +26,10 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Login realizado com sucesso',
-    schema: {
-      properties: {
-        user: { $ref: '#/components/schemas/UserResponseDto' },
-        access_token: { type: 'string' },
-      },
-    },
+    type: AuthResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
-  async login(@Body() loginDto: LoginDto) {
+  async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.login(loginDto);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('profile')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Obter perfil do usuário logado' })
-  @ApiResponse({
-    status: 200,
-    description: 'Perfil do usuário',
-    type: UserResponseDto,
-  })
-  @ApiResponse({ status: 401, description: 'Token inválido' })
-  getProfile(@CurrentUser() user: UserResponseDto) {
-    return user;
   }
 }

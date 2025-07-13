@@ -4,310 +4,355 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Iniciando seed do banco de dados...');
+  console.log('🌱 Starting database seeding...');
 
-  // Criar usuário administrador
-  const adminPassword = await bcrypt.hash('admin123', 10);
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@mercadoplace.com' },
-    update: {},
-    create: {
-      email: 'admin@mercadoplace.com',
-      name: 'Administrador',
-      password: adminPassword,
-      isAdmin: true,
-      points: 0,
-      latitude: -15.7942,
-      longitude: -47.8822,
-    },
-  });
+  // Clean existing data
+  await prisma.userShoppingList.deleteMany();
+  await prisma.purchasedProduct.deleteMany();
+  await prisma.purchase.deleteMany();
+  await prisma.reviewMarket.deleteMany();
+  await prisma.marketProduct.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.product.deleteMany();
+  await prisma.market.deleteMany();
 
-  // Criar usuário comum
-  const userPassword = await bcrypt.hash('user123', 10);
-  const user = await prisma.user.upsert({
-    where: { email: 'user@mercadoplace.com' },
-    update: {},
-    create: {
-      email: 'user@mercadoplace.com',
-      name: 'Usuário Teste',
-      password: userPassword,
-      isAdmin: false,
-      points: 5,
-      latitude: -15.8,
-      longitude: -47.9,
-    },
-  });
-
-  // Criar mercados
-  const supermarket1 = await prisma.market.upsert({
-    where: { id: 'market-1' },
-    update: {},
-    create: {
-      id: 'market-1',
-      name: 'Supermercado Central',
-      latitude: -15.7942,
-      longitude: -47.8822,
-    },
-  });
-
-  const supermarket2 = await prisma.market.upsert({
-    where: { id: 'market-2' },
-    update: {},
-    create: {
-      id: 'market-2',
-      name: 'Mercado do Bairro',
-      latitude: -15.81,
-      longitude: -47.91,
-    },
-  });
-
-  const supermarket3 = await prisma.market.upsert({
-    where: { id: 'market-3' },
-    update: {},
-    create: {
-      id: 'market-3',
-      name: 'Extra Hipermercado',
-      latitude: -15.78,
-      longitude: -47.85,
-    },
-  });
-
-  // Criar produtos
-  const productsData = [
-    {
-      name: 'Arroz Integral 1kg',
-      description: 'Arroz integral orgânico de alta qualidade',
-      currentPrice: 8.99,
-      imageUrl: 'https://example.com/arroz.jpg',
-      isValid: true,
-    },
-    {
-      name: 'Feijão Preto 1kg',
-      description: 'Feijão preto selecionado',
-      currentPrice: 6.5,
-      imageUrl: 'https://example.com/feijao.jpg',
-      isValid: true,
-    },
-    {
-      name: 'Óleo de Soja 900ml',
-      description: 'Óleo de soja refinado',
-      currentPrice: 4.99,
-      imageUrl: 'https://example.com/oleo.jpg',
-      isValid: true,
-    },
-    {
-      name: 'Açúcar Cristal 1kg',
-      description: 'Açúcar cristal branco',
-      currentPrice: 3.99,
-      imageUrl: 'https://example.com/acucar.jpg',
-      isValid: true,
-    },
-    {
-      name: 'Café Torrado 500g',
-      description: 'Café torrado e moído tradicional',
-      currentPrice: 12.99,
-      imageUrl: 'https://example.com/cafe.jpg',
-      isValid: true,
-    },
-    {
-      name: 'Leite Integral 1L',
-      description: 'Leite integral UHT',
-      currentPrice: 4.5,
-      imageUrl: 'https://example.com/leite.jpg',
-      isValid: false, // Produto pendente de aprovação
-    },
-  ];
-
-  const createdProducts: any[] = [];
-  for (const productData of productsData) {
-    const product = await prisma.product.upsert({
-      where: { name: productData.name },
-      update: {},
-      create: {
-        ...productData,
-        priceHistory: {
-          create: {
-            price: productData.currentPrice,
-          },
-        },
-      },
-    });
-    createdProducts.push(product);
-
-    // Conectar produtos aos mercados (alguns produtos em alguns mercados)
-    if (productData.isValid) {
-      await prisma.market.update({
-        where: { id: supermarket1.id },
-        data: {
-          availableProducts: {
-            connect: { id: product.id },
-          },
-        },
-      });
-
-      if (productData.name !== 'Café Torrado 500g') {
-        await prisma.market.update({
-          where: { id: supermarket2.id },
-          data: {
-            availableProducts: {
-              connect: { id: product.id },
-            },
-          },
-        });
-      }
-
-      if (
-        [
-          'Arroz Integral 1kg',
-          'Óleo de Soja 900ml',
-          'Café Torrado 500g',
-        ].includes(productData.name)
-      ) {
-        await prisma.market.update({
-          where: { id: supermarket3.id },
-          data: {
-            availableProducts: {
-              connect: { id: product.id },
-            },
-          },
-        });
-      }
-    }
-  }
-
-  // Criar algumas avaliações
-  await prisma.reviewMarket.upsert({
-    where: {
-      userId_marketId: {
-        userId: user.id,
-        marketId: supermarket1.id,
-      },
-    },
-    update: {},
-    create: {
-      userId: user.id,
-      marketId: supermarket1.id,
-      rating: 5,
-      comment: 'Excelente mercado! Produtos frescos e bom atendimento.',
-    },
-  });
-
-  await prisma.reviewMarket.upsert({
-    where: {
-      userId_marketId: {
-        userId: user.id,
-        marketId: supermarket2.id,
-      },
-    },
-    update: {},
-    create: {
-      userId: user.id,
-      marketId: supermarket2.id,
-      rating: 4,
-      comment: 'Bom mercado de bairro, preços justos.',
-    },
-  });
-
-  // Adicionar alguns itens na lista de compras do usuário
-  const arrozProduct = createdProducts.find(
-    (p) => p.name === 'Arroz Integral 1kg',
-  );
-  const feijaoProduct = createdProducts.find(
-    (p) => p.name === 'Feijão Preto 1kg',
-  );
-
-  if (arrozProduct) {
-    await prisma.itemListaDeCompra.upsert({
-      where: {
-        userId_productId: {
-          userId: user.id,
-          productId: arrozProduct.id,
-        },
-      },
-      update: {},
-      create: {
-        userId: user.id,
-        productId: arrozProduct.id,
-        quantity: 2,
-        isSelected: true,
-      },
-    });
-  }
-
-  if (feijaoProduct) {
-    await prisma.itemListaDeCompra.upsert({
-      where: {
-        userId_productId: {
-          userId: user.id,
-          productId: feijaoProduct.id,
-        },
-      },
-      update: {},
-      create: {
-        userId: user.id,
-        productId: feijaoProduct.id,
-        quantity: 1,
-        isSelected: false,
-      },
-    });
-  }
-
-  // Criar uma compra finalizada histórica
-  const oleoProduct = createdProducts.find(
-    (p) => p.name === 'Óleo de Soja 900ml',
-  );
-  const acucarProduct = createdProducts.find(
-    (p) => p.name === 'Açúcar Cristal 1kg',
-  );
-
-  const purchase = await prisma.compraFinalizada.create({
+  // Create Users
+  const adminUser = await prisma.user.create({
     data: {
-      userId: user.id,
-      totalCost: 25.48,
-      purchasedItems: {
-        create: [
-          {
-            productName: 'Arroz Integral 1kg',
-            priceAtTime: 8.99,
-            quantity: 2,
-            productId: arrozProduct?.id || null,
-          },
-          {
-            productName: 'Óleo de Soja 900ml',
-            priceAtTime: 4.99,
-            quantity: 1,
-            productId: oleoProduct?.id || null,
-          },
-          {
-            productName: 'Açúcar Cristal 1kg',
-            priceAtTime: 3.5, // Preço histórico diferente
-            quantity: 1,
-            productId: acucarProduct?.id || null,
-          },
-        ],
-      },
+      email: 'admin@mercadoplace.com',
+      name: 'Admin User',
+      password: await bcrypt.hash('admin123', 10),
+      isAdmin: true,
+      points: 100,
+      latitude: -15.7942,
+      longitude: -47.8822,
     },
   });
 
-  console.log('✅ Seed concluído com sucesso!');
-  console.log('📊 Dados criados:');
-  console.log(`👤 Usuários: Admin (${admin.email}) e Usuário (${user.email})`);
+  const regularUser = await prisma.user.create({
+    data: {
+      email: 'user@mercadoplace.com',
+      name: 'Regular User',
+      password: await bcrypt.hash('user123', 10),
+      isAdmin: false,
+      points: 25,
+      latitude: -15.795,
+      longitude: -47.883,
+    },
+  });
+
+  const testUser = await prisma.user.create({
+    data: {
+      email: 'test@mercadoplace.com',
+      name: 'Test User',
+      password: await bcrypt.hash('test123', 10),
+      isAdmin: false,
+      points: 10,
+      latitude: -15.796,
+      longitude: -47.884,
+    },
+  });
+
+  console.log('✅ Users created');
+
+  // Create Products
+  const products = await Promise.all([
+    prisma.product.create({
+      data: {
+        name: 'Arroz Integral 1kg',
+        description: 'Arroz integral orgânico, rico em fibras e nutrientes',
+        imageUrl: 'https://example.com/arroz-integral.jpg',
+      },
+    }),
+    prisma.product.create({
+      data: {
+        name: 'Feijão Preto 1kg',
+        description: 'Feijão preto tradicional, fonte de proteína vegetal',
+        imageUrl: 'https://example.com/feijao-preto.jpg',
+      },
+    }),
+    prisma.product.create({
+      data: {
+        name: 'Leite Integral 1L',
+        description: 'Leite integral pasteurizado, rico em cálcio',
+        imageUrl: 'https://example.com/leite-integral.jpg',
+      },
+    }),
+    prisma.product.create({
+      data: {
+        name: 'Pão Francês',
+        description: 'Pão francês tradicional, fresquinho',
+        imageUrl: 'https://example.com/pao-frances.jpg',
+      },
+    }),
+    prisma.product.create({
+      data: {
+        name: 'Banana Nanica 1kg',
+        description: 'Banana nanica madura, rica em potássio',
+        imageUrl: 'https://example.com/banana-nanica.jpg',
+      },
+    }),
+    prisma.product.create({
+      data: {
+        name: 'Maçã Fuji 1kg',
+        description: 'Maçã fuji doce e crocante, importada',
+        imageUrl: 'https://example.com/maca-fuji.jpg',
+      },
+    }),
+  ]);
+
+  console.log('✅ Products created');
+
+  // Create Markets
+  const markets = await Promise.all([
+    prisma.market.create({
+      data: {
+        name: 'Supermercado Central',
+        latitude: -15.7942,
+        longitude: -47.8822,
+      },
+    }),
+    prisma.market.create({
+      data: {
+        name: 'Mercado do Bairro',
+        latitude: -15.795,
+        longitude: -47.883,
+      },
+    }),
+    prisma.market.create({
+      data: {
+        name: 'Hipermercado Extra',
+        latitude: -15.796,
+        longitude: -47.884,
+      },
+    }),
+  ]);
+
+  console.log('✅ Markets created');
+
+  // Create MarketProducts (some approved, some pending)
+  const marketProducts = await Promise.all([
+    // Supermercado Central
+    prisma.marketProduct.create({
+      data: {
+        marketId: markets[0].id,
+        productId: products[0].id, // Arroz Integral
+        price: 8.99,
+        isValid: true,
+      },
+    }),
+    prisma.marketProduct.create({
+      data: {
+        marketId: markets[0].id,
+        productId: products[1].id, // Feijão Preto
+        price: 6.5,
+        isValid: true,
+      },
+    }),
+    prisma.marketProduct.create({
+      data: {
+        marketId: markets[0].id,
+        productId: products[2].id, // Leite Integral
+        price: 4.99,
+        isValid: true,
+      },
+    }),
+    // Mercado do Bairro
+    prisma.marketProduct.create({
+      data: {
+        marketId: markets[1].id,
+        productId: products[0].id, // Arroz Integral
+        price: 9.5,
+        isValid: true,
+      },
+    }),
+    prisma.marketProduct.create({
+      data: {
+        marketId: markets[1].id,
+        productId: products[3].id, // Pão Francês
+        price: 0.8,
+        isValid: true,
+      },
+    }),
+    prisma.marketProduct.create({
+      data: {
+        marketId: markets[1].id,
+        productId: products[4].id, // Banana Nanica
+        price: 3.2,
+        isValid: false, // Pending approval
+      },
+    }),
+    // Hipermercado Extra
+    prisma.marketProduct.create({
+      data: {
+        marketId: markets[2].id,
+        productId: products[2].id, // Leite Integral
+        price: 4.5,
+        isValid: true,
+      },
+    }),
+    prisma.marketProduct.create({
+      data: {
+        marketId: markets[2].id,
+        productId: products[5].id, // Maçã Fuji
+        price: 7.8,
+        isValid: true,
+      },
+    }),
+  ]);
+
+  console.log('✅ Market products created');
+
+  // Create Reviews
+  await Promise.all([
+    prisma.reviewMarket.create({
+      data: {
+        userId: regularUser.id,
+        marketId: markets[0].id,
+        rating: 5,
+        comment: 'Excelente mercado! Produtos frescos e bom atendimento.',
+      },
+    }),
+    prisma.reviewMarket.create({
+      data: {
+        userId: testUser.id,
+        marketId: markets[0].id,
+        rating: 4,
+        comment: 'Bom mercado, preços justos.',
+      },
+    }),
+    prisma.reviewMarket.create({
+      data: {
+        userId: regularUser.id,
+        marketId: markets[1].id,
+        rating: 3,
+        comment: 'Mercado razoável, poderia melhorar o atendimento.',
+      },
+    }),
+  ]);
+
+  console.log('✅ Reviews created');
+
+  // Create Purchase History
+  const purchase1 = await prisma.purchase.create({
+    data: {
+      userId: regularUser.id,
+      totalPrice: 20.48,
+      createdAt: new Date('2024-01-15T10:30:00Z'),
+    },
+  });
+
+  const purchase2 = await prisma.purchase.create({
+    data: {
+      userId: testUser.id,
+      totalPrice: 15.3,
+      createdAt: new Date('2024-01-20T15:45:00Z'),
+    },
+  });
+
+  // Create Purchased Products
+  await Promise.all([
+    prisma.purchasedProduct.create({
+      data: {
+        userId: regularUser.id,
+        productId: products[0].id, // Arroz Integral
+        marketId: markets[0].id,
+        purchaseId: purchase1.id,
+        price: 8.99,
+      },
+    }),
+    prisma.purchasedProduct.create({
+      data: {
+        userId: regularUser.id,
+        productId: products[1].id, // Feijão Preto
+        marketId: markets[0].id,
+        purchaseId: purchase1.id,
+        price: 6.5,
+      },
+    }),
+    prisma.purchasedProduct.create({
+      data: {
+        userId: regularUser.id,
+        productId: products[2].id, // Leite Integral
+        marketId: markets[0].id,
+        purchaseId: purchase1.id,
+        price: 4.99,
+      },
+    }),
+    prisma.purchasedProduct.create({
+      data: {
+        userId: testUser.id,
+        productId: products[2].id, // Leite Integral
+        marketId: markets[2].id,
+        purchaseId: purchase2.id,
+        price: 4.5,
+      },
+    }),
+    prisma.purchasedProduct.create({
+      data: {
+        userId: testUser.id,
+        productId: products[5].id, // Maçã Fuji
+        marketId: markets[2].id,
+        purchaseId: purchase2.id,
+        price: 7.8,
+      },
+    }),
+  ]);
+
+  console.log('✅ Purchase history created');
+
+  // Create Shopping List items
+  await Promise.all([
+    prisma.userShoppingList.create({
+      data: {
+        userId: regularUser.id,
+        productId: products[3].id, // Pão Francês
+      },
+    }),
+    prisma.userShoppingList.create({
+      data: {
+        userId: regularUser.id,
+        productId: products[4].id, // Banana Nanica
+      },
+    }),
+    prisma.userShoppingList.create({
+      data: {
+        userId: testUser.id,
+        productId: products[0].id, // Arroz Integral
+      },
+    }),
+    prisma.userShoppingList.create({
+      data: {
+        userId: testUser.id,
+        productId: products[1].id, // Feijão Preto
+      },
+    }),
+  ]);
+
+  console.log('✅ Shopping list items created');
+
+  // Display summary
+  console.log('\n🎉 Database seeding completed!');
+  console.log('\n📊 Summary:');
+  console.log(`👥 Users: ${await prisma.user.count()}`);
+  console.log(`📦 Products: ${await prisma.product.count()}`);
+  console.log(`🏪 Markets: ${await prisma.market.count()}`);
+  console.log(`🛒 Market Products: ${await prisma.marketProduct.count()}`);
+  console.log(`⭐ Reviews: ${await prisma.reviewMarket.count()}`);
+  console.log(`💳 Purchases: ${await prisma.purchase.count()}`);
   console.log(
-    `🏪 Mercados: ${supermarket1.name}, ${supermarket2.name}, ${supermarket3.name}`,
+    `🛍️ Shopping List Items: ${await prisma.userShoppingList.count()}`,
   );
-  console.log(`📦 Produtos: ${createdProducts.length} produtos criados`);
-  console.log(`⭐ Avaliações: 2 avaliações criadas`);
-  console.log(`🛒 Lista de compras: 2 itens na lista do usuário`);
-  console.log(`💰 Compras: 1 compra histórica criada`);
-  console.log('');
-  console.log('🔑 Credenciais para teste:');
+
+  console.log('\n🔑 Test Accounts:');
   console.log('Admin: admin@mercadoplace.com / admin123');
-  console.log('Usuário: user@mercadoplace.com / user123');
+  console.log('User: user@mercadoplace.com / user123');
+  console.log('Test: test@mercadoplace.com / test123');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Erro durante o seed:', e);
+    console.error('❌ Error during seeding:', e);
     process.exit(1);
   })
   .finally(async () => {

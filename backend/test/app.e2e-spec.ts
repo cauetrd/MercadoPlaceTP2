@@ -24,13 +24,47 @@ describe('AppController (e2e)', () => {
     await app.init();
 
     // Clean database before each test
-    await prismaService.itemListaDeCompra.deleteMany();
-    await prismaService.compraFinalizada.deleteMany();
-    await prismaService.reviewMarket.deleteMany();
-    await prismaService.priceHistory.deleteMany();
-    await prismaService.user.deleteMany();
-    await prismaService.product.deleteMany();
-    await prismaService.market.deleteMany();
+    // Order matters: delete children first, then parents
+    try {
+      await prismaService.userShoppingList.deleteMany();
+    } catch (error) {
+      // Table might not exist yet
+    }
+    try {
+      await prismaService.purchasedProduct.deleteMany();
+    } catch (error) {
+      // Table might not exist yet
+    }
+    try {
+      await prismaService.purchase.deleteMany();
+    } catch (error) {
+      // Table might not exist yet
+    }
+    try {
+      await prismaService.reviewMarket.deleteMany();
+    } catch (error) {
+      // Table might not exist yet
+    }
+    try {
+      await prismaService.marketProduct.deleteMany();
+    } catch (error) {
+      // Table might not exist yet
+    }
+    try {
+      await prismaService.user.deleteMany();
+    } catch (error) {
+      // Table might not exist yet
+    }
+    try {
+      await prismaService.product.deleteMany();
+    } catch (error) {
+      // Table might not exist yet
+    }
+    try {
+      await prismaService.market.deleteMany();
+    } catch (error) {
+      // Table might not exist yet
+    }
   });
 
   afterAll(async () => {
@@ -92,7 +126,7 @@ describe('AppController (e2e)', () => {
       expect(response.body.user.email).toBe(loginDto.email);
     });
 
-    it('/auth/profile (GET)', async () => {
+    it('/users/me (GET)', async () => {
       // First register and get token
       const createUserDto = {
         email: 'profile@example.com',
@@ -108,7 +142,7 @@ describe('AppController (e2e)', () => {
       const token = registerResponse.body.access_token;
 
       const response = await request(app.getHttpServer())
-        .get('/auth/profile')
+        .get('/users/me')
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
 
@@ -139,7 +173,6 @@ describe('AppController (e2e)', () => {
       const createProductDto = {
         name: 'Test Product',
         description: 'A test product',
-        currentPrice: 19.99,
         imageUrl: 'http://example.com/image.jpg',
       };
 
@@ -150,31 +183,56 @@ describe('AppController (e2e)', () => {
         .expect(201);
 
       expect(response.body.name).toBe(createProductDto.name);
-      expect(response.body.currentPrice).toBe(createProductDto.currentPrice);
-      expect(response.body.isValid).toBe(false); // Should be false by default
+      expect(response.body.description).toBe(createProductDto.description);
     });
 
     it('/products (GET)', async () => {
       // First create a product
       const createProductDto = {
-        name: 'Listed Product',
+        name: 'Listed Product for GET Test',
         description: 'A product to be listed',
-        currentPrice: 25.99,
       };
 
-      const createResponse = await request(app.getHttpServer())
+      const productResponse = await request(app.getHttpServer())
         .post('/products')
         .set('Authorization', `Bearer ${authToken}`)
         .send(createProductDto);
 
-      // Approve the product as admin (we'll need to update the user to be admin)
+      // Make user admin to create market
       await prismaService.user.update({
         where: { id: userId },
         data: { isAdmin: true },
       });
 
+      // Create a market
+      const createMarketDto = {
+        name: 'GET Test Market',
+        latitude: -15.7942,
+        longitude: -47.8822,
+      };
+
+      const marketResponse = await request(app.getHttpServer())
+        .post('/markets')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(createMarketDto);
+
+      // Create a market-product
+      const createMarketProductDto = {
+        marketId: marketResponse.body.id,
+        productId: productResponse.body.id,
+        price: 25.99,
+      };
+
+      const marketProductResponse = await request(app.getHttpServer())
+        .post('/market-products')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send(createMarketProductDto);
+
+      expect(marketProductResponse.status).toBe(201);
+
+      // Approve the market-product as admin (user is already admin)
       await request(app.getHttpServer())
-        .patch(`/products/${createResponse.body.id}/approve`)
+        .patch(`/market-products/${marketProductResponse.body.id}/approve`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -237,7 +295,6 @@ describe('AppController (e2e)', () => {
       const createProductDto = {
         name: 'Shopping Product',
         description: 'A product for shopping',
-        currentPrice: 15.99,
       };
 
       const productResponse = await request(app.getHttpServer())
@@ -247,31 +304,21 @@ describe('AppController (e2e)', () => {
 
       productId = productResponse.body.id;
 
-      // Make user admin and approve product
-      await prismaService.user.update({
-        where: { id: userId },
-        data: { isAdmin: true },
-      });
-
-      await request(app.getHttpServer())
-        .patch(`/products/${productId}/approve`)
-        .set('Authorization', `Bearer ${authToken}`);
+      // No need to approve products anymore - only market-products need approval
     });
 
-    it('/shopping-list/items (POST)', async () => {
+    it('/shopping-list (POST)', async () => {
       const addItemDto = {
         productId: productId,
-        quantity: 2,
       };
 
       const response = await request(app.getHttpServer())
-        .post('/shopping-list/items')
+        .post('/shopping-list')
         .set('Authorization', `Bearer ${authToken}`)
         .send(addItemDto)
         .expect(201);
 
       expect(response.body.productId).toBe(productId);
-      expect(response.body.quantity).toBe(2);
       expect(response.body.userId).toBe(userId);
     });
 
@@ -279,11 +326,10 @@ describe('AppController (e2e)', () => {
       // First add an item
       const addItemDto = {
         productId: productId,
-        quantity: 1,
       };
 
       await request(app.getHttpServer())
-        .post('/shopping-list/items')
+        .post('/shopping-list')
         .set('Authorization', `Bearer ${authToken}`)
         .send(addItemDto);
 
@@ -301,7 +347,7 @@ describe('AppController (e2e)', () => {
 
   describe('Error handling', () => {
     it('should return 401 for protected routes without token', async () => {
-      await request(app.getHttpServer()).get('/auth/profile').expect(401);
+      await request(app.getHttpServer()).get('/users/me').expect(401);
     });
 
     it('should return 400 for invalid data', async () => {

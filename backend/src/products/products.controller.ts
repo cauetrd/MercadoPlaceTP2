@@ -51,7 +51,7 @@ export class ProductsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar produtos (com filtros e ordenação)' })
+  @ApiOperation({ summary: 'Listar produtos (com filtros)' })
   @ApiResponse({
     status: 200,
     description: 'Lista de produtos',
@@ -63,57 +63,27 @@ export class ProductsController {
     description: 'Nome do produto para buscar',
   })
   @ApiQuery({
+    name: 'userLatitude',
+    required: false,
+    description: 'Latitude do usuário',
+  })
+  @ApiQuery({
+    name: 'userLongitude',
+    required: false,
+    description: 'Longitude do usuário',
+  })
+  @ApiQuery({
     name: 'sortBy',
     required: false,
-    enum: ['price', 'name'],
     description: 'Campo para ordenação',
   })
   @ApiQuery({
     name: 'sortOrder',
     required: false,
-    enum: ['asc', 'desc'],
-    description: 'Direção da ordenação',
-  })
-  @ApiQuery({
-    name: 'userLatitude',
-    required: false,
-    type: Number,
-    description: 'Latitude para ordenação por distância',
-  })
-  @ApiQuery({
-    name: 'userLongitude',
-    required: false,
-    type: Number,
-    description: 'Longitude para ordenação por distância',
+    description: 'Ordem de classificação',
   })
   findAll(@Query() searchDto: ProductSearchDto) {
     return this.productsService.findAll(searchDto);
-  }
-
-  @Get('pending')
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Listar produtos pendentes de aprovação (Admin)' })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista de produtos pendentes',
-    type: [ProductResponseDto],
-  })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
-  findPendingApproval() {
-    return this.productsService.findPendingApproval();
-  }
-
-  @Get('market/:marketId')
-  @ApiOperation({ summary: 'Listar produtos de um mercado específico' })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista de produtos do mercado',
-    type: [ProductResponseDto],
-  })
-  @ApiResponse({ status: 404, description: 'Mercado não encontrado' })
-  findByMarket(@Param('marketId') marketId: string) {
-    return this.productsService.findByMarket(marketId);
   }
 
   @Get(':id')
@@ -144,32 +114,6 @@ export class ProductsController {
     @CurrentUser() user: UserResponseDto,
   ) {
     return this.productsService.update(id, updateProductDto, user.id);
-  }
-
-  @Patch(':id/approve')
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Aprovar produto (Admin)' })
-  @ApiResponse({
-    status: 200,
-    description: 'Produto aprovado com sucesso',
-    type: ProductResponseDto,
-  })
-  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
-  approve(@Param('id') id: string) {
-    return this.productsService.approve(id);
-  }
-
-  @Delete(':id/reject')
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Reprovar produto (Admin)' })
-  @ApiResponse({ status: 200, description: 'Produto reprovado e removido' })
-  @ApiResponse({ status: 404, description: 'Produto não encontrado' })
-  @ApiResponse({ status: 403, description: 'Acesso negado' })
-  reject(@Param('id') id: string) {
-    return this.productsService.reject(id);
   }
 
   @Delete(':id')

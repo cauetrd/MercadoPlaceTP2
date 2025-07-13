@@ -7,12 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Modelo para os usuários do sistema.
 model User {
   id        String @id @default(uuid())
   email     String @unique
   name      String
-  password  String // lembrar de armazenar o hash da senha
+  password  String
 
   latitude  Float?
   longitude Float?
@@ -20,130 +19,111 @@ model User {
   isAdmin   Boolean @default(false)
   points    Int     @default(0)
 
-  // Relações
-  shoppingList      ItemListaDeCompra[] // A lista de compras ATUAL do usuário.
-  reviews           ReviewMarket[]      // Avaliações de mercados feitas por este usuário.
-  completedPurchases CompraFinalizada[] // O histórico de compras finalizadas do usuário.
+  shoppingList       UserShoppingList[]
+  reviews            ReviewMarket[]
+  completedPurchases Purchase[]
+  purchasedProducts  PurchasedProduct[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-/// Modelo para os produtos disponíveis no sistema.
 model Product {
   id           String  @id @default(uuid())
   name         String  @unique
   description  String?
-  currentPrice Float
   imageUrl     String?
-  isValid      Boolean @default(false)
 
-  
-  priceHistory      PriceHistory[]
-  inShoppingLists   ItemListaDeCompra[]
-  markets           Market[]
-  inPurchasedItems  ItemComprado[]
+  marketProducts    MarketProduct[]
+  purchasedProducts PurchasedProduct[]
+  userShoppingList  UserShoppingList[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-/// Modelo para os mercados
 model Market {
-  id        String @id @default(uuid())
-  name      String
-  latitude  Float
-  longitude Float
+    id        String @id @default(uuid())
+    name      String
+    latitude  Float
+    longitude Float
 
-  // Relações
-  availableProducts Product[]      
-  reviews           ReviewMarket[] 
+    products          MarketProduct[]
+    reviews           ReviewMarket[]
+    purchasedProducts PurchasedProduct[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
-// --- Tabelas de Relação e Histórico ---
+model MarketProduct {
+    id        String @id @default(uuid())
+    marketId  String
+    productId String
+    price     Float
+    lastPrice Float?
+    isValid   Boolean @default(false)
 
-/// Representa um item específico na lista de compras de um usuário (carrinho).
-model ItemListaDeCompra {
-  id         String  @id @default(uuid())
-  quantity   Int     @default(1)
-  isSelected Boolean @default(false)
+    market    Market @relation(fields: [marketId], references: [id])
+    product   Product @relation(fields: [productId], references: [id])
 
-  // Relações
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([userId, productId])
+    @@unique([marketId, productId])
 }
 
-/// Armazena o histórico de preços de um produto.
-model PriceHistory {
-  id    String  @id @default(uuid())
-  price Float
-
-  // Relações
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId String
-
-  createdAt DateTime @default(now())
-}
-
-/// Modela uma avaliação feita por um usuário a um mercado.
 model ReviewMarket {
-  id      String @id @default(uuid())
-  rating  Int 
-  comment String?
+    id        String @id @default(uuid())
+    userId    String
+    marketId  String
+    rating    Int
+    comment   String?
 
-  // Relações
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  market    Market @relation(fields: [marketId], references: [id], onDelete: Cascade)
-  marketId  String
+    user      User @relation(fields: [userId], references: [id])
+    market    Market @relation(fields: [marketId], references: [id])
 
-  createdAt DateTime @default(now())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-  @@unique([userId, marketId])
+    @@unique([userId, marketId])
 }
 
+model PurchasedProduct {
+    id         String @id @default(uuid())
+    userId     String
+    productId  String
+    marketId   String
+    purchaseId String
+    price      Float
 
-/// Representa uma única compra finalizada por um usuário.
-/// Cada vez que o usuário "fecha" um carrinho, um registro deste é criado.
-model CompraFinalizada {
-  id        String @id @default(uuid())
-  totalCost Float
+    user      User @relation(fields: [userId], references: [id])
+    product   Product @relation(fields: [productId], references: [id])
+    market    Market @relation(fields: [marketId], references: [id])
+    purchase  Purchase @relation(fields: [purchaseId], references: [id])
 
-  // Relações
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  
-  // A lista de itens que fizeram parte desta compra.
-  purchasedItems ItemComprado[]
-
-  createdAt DateTime @default(now()) // Data em que a compra foi finalizada.
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
-/// Representa um item específico que fez parte de uma compra finalizada.
-/// É um "snapshot" do produto no momento da compra, para garantir a integridade do histórico.
-model ItemComprado {
-  id        String @id @default(uuid())
-  
-  productName  String  // Guarda o nome como estava na hora da compra.
-  priceAtTime  Float
-  quantity     Int
+model Purchase {
+    id        String @id @default(uuid())
+    userId    String
+    totalPrice Float
 
-  // Relações
-  purchase   CompraFinalizada @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
-  purchaseId String
-  
-  // Relação com o produto original, para poder clicar e ver o produto hoje.
-  // onDelete: SetNull significa que se o produto for deletado do sistema, o histórico não será perdido.
-  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
-  productId String?
+    user      User @relation(fields: [userId], references: [id])
+    products  PurchasedProduct[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model UserShoppingList {
+    id        String @id @default(uuid())
+    userId    String
+    productId String
+
+    user      User @relation(fields: [userId], references: [id])
+    product   Product @relation(fields: [productId], references: [id])
+
+    createdAt DateTime @default(now())
+
+    @@unique([userId, productId])
 }
