@@ -23,7 +23,8 @@ cd backend
 npm install
 
 npx prisma generate
-npx prisma migrate dev
+npx prisma migrate dev (mesmo se der erro, ignore)
+npx prisma db push
 
 npx prisma db seed
 
