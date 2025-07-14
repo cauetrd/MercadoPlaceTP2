@@ -174,6 +174,26 @@ export interface FinalizePurchaseDto {
   selectedItemIds: string[];
 }
 
+export interface CreatePurchaseItemDto {
+  productId: string;
+  marketId: string;
+  price: number;
+}
+
+export interface CreatePurchaseDto {
+  items: CreatePurchaseItemDto[];
+  purchaseDate?: string;
+}
+
+export interface PurchaseWithItemsDto extends BaseEntity {
+  userId: string;
+  totalPrice: number;
+  purchaseDate?: string;
+  user?: UserResponseDto;
+  purchasedProducts?: PurchasedProductResponseDto[];
+  products?: PurchasedProductResponseDto[]; // Para compatibilidade com backend
+}
+
 export interface PurchasedProductResponseDto extends BaseEntity {
   userId: string;
   productId: string;

@@ -400,10 +400,12 @@ export class MarketProductService {
         count: number;
         products: Array<{
           id: string;
+          marketProductId: string;
           name: string;
           description: string;
           imageUrl: string;
           price: number;
+          lastPrice: number | null;
         }>;
       }
     > = {};
@@ -423,10 +425,12 @@ export class MarketProductService {
       grouped[marketId].count += 1;
       grouped[marketId].products.push({
         id: mp.product.id,
+        marketProductId: mp.id,
         name: mp.product.name,
         description: mp.product.description ?? '',
         imageUrl: mp.product.imageUrl ?? '',
         price: mp.price,
+        lastPrice: mp.lastPrice,
       });
     }
 

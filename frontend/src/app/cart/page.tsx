@@ -13,10 +13,12 @@ interface MarketSubtotal {
   subtotal: number;
   products: Array<{
     id: string;
+    marketProductId: string;
     name: string;
     description: string;
     imageUrl: string;
     price: number;
+    lastPrice?: number;
   }>;
 }
 
@@ -24,7 +26,16 @@ export default function CartPage() {
   const [cartItems, setCartItems] = useState<ShoppingListItemResponseDto[]>([]);
   const [marketSubtotals, setMarketSubtotals] = useState<MarketSubtotal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMarketId, setSelectedMarketId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<{
+    marketProductId: string;
+    marketName: string;
+    productName: string;
+    price: number;
+  } | null>(null);
+  const [editingPrice, setEditingPrice] = useState(false);
+  const [newPrice, setNewPrice] = useState<number>(0);
   const router = useRouter();
 
   const fetchCartItems = async () => {
@@ -57,6 +68,10 @@ export default function CartPage() {
           products: item.products,
         }));
         setMarketSubtotals(mapped);
+        // Selecionar automaticamente o primeiro mercado (menor preço)
+        if (mapped.length > 0 && !selectedMarketId) {
+          setSelectedMarketId(mapped[0].marketId);
+        }
       } else {
         setMarketSubtotals([]);
       }
@@ -99,6 +114,56 @@ export default function CartPage() {
     }
   };
 
+  const updatePrice = async () => {
+    if (!selectedProduct) return;
+
+    try {
+      await apiService.patch(
+        `/market-products/${selectedProduct.marketProductId}`,
+        {
+          price: newPrice,
+        }
+      );
+
+      toast.success("Preço atualizado com sucesso!");
+      setEditingPrice(false);
+
+      // Update the local state
+      setMarketSubtotals((prev) =>
+        prev.map((market) => ({
+          ...market,
+          products: market.products.map((product) =>
+            product.marketProductId === selectedProduct.marketProductId
+              ? { ...product, price: newPrice }
+              : product
+          ),
+          subtotal: market.products.reduce(
+            (sum, product) =>
+              sum +
+              (product.marketProductId === selectedProduct.marketProductId
+                ? newPrice
+                : product.price),
+            0
+          ),
+        }))
+      );
+
+      // Update selected product with new price
+      setSelectedProduct((prev) =>
+        prev ? { ...prev, price: newPrice } : null
+      );
+    } catch (error) {
+      console.error("Erro ao atualizar preço:", error);
+      toast.error("Erro ao atualizar preço. Tente novamente.");
+    }
+  };
+
+  const closeProductModal = () => {
+    setSelectedProduct(null);
+    setEditingPrice(false);
+    setNewPrice(0);
+  };
+
   useEffect(() => {
     fetchCartItems();
   }, []);
@@ -110,12 +175,77 @@ export default function CartPage() {
     }
   }, [cartItems]);
 
-  const handleGoToCheckout = () => {
-    router.push("/checkout");
+  const handleSavePurchase = async () => {
+    if (cartItems.length === 0) {
+      toast.error(
+        "Carrinho vazio. Adicione produtos antes de finalizar a compra."
+      );
+      return;
+    }
+
+    if (marketSubtotals.length === 0) {
+      toast.error(
+        "Não há mercados disponíveis para todos os produtos do carrinho."
+      );
+      return;
+    }
+
+    try {
+      // Usar o mercado selecionado ou o primeiro (menor preço) como padrão
+      const selectedMarket = selectedMarketId
+        ? marketSubtotals.find((m) => m.marketId === selectedMarketId) ||
+          marketSubtotals[0]
+        : marketSubtotals[0];
+
+      // Mapear produtos para o formato esperado pela API
+      const purchaseItems = selectedMarket.products.map((product) => ({
+        productId: product.id,
+        marketId: selectedMarket.marketId,
+        price: product.price,
+      }));
+
+      // Criar a compra
+      const purchaseData = {
+        items: purchaseItems,
+        purchaseDate: new Date().toISOString(),
+      };
+
+      await apiService.post("/purchase", purchaseData);
+
+      // Limpar o carrinho após salvar a compra
+      await apiService.delete("/shopping-list");
+      setCartItems([]);
+      setMarketSubtotals([]);
+      setSelectedMarketId(null);
+
+      toast.success(
+        `Compra realizada com sucesso no ${
+          selectedMarket.marketName
+        }! Total: R$ ${selectedMarket.subtotal.toFixed(2)}`
+      );
+    } catch (error) {
+      console.error("Erro ao salvar compra:", error);
+      toast.error("Erro ao finalizar compra. Tente novamente.");
+    }
+  };
+
+  const handleHistory = () => {
+    router.push("/history");
   };
 
   const handleBackToFeed = () => {
     router.push("/feed");
+  };
+
+  const openProductModal = (
+    marketProductId: string,
+    marketName: string,
+    productName: string,
+    price: number
+  ) => {
+    setSelectedProduct({ marketProductId, marketName, productName, price });
+    setNewPrice(price);
+    setEditingPrice(false);
   };
 
   return (
@@ -205,53 +335,76 @@ export default function CartPage() {
                 ))}
               </div>
 
-{/* Subtotais por mercado */}
-{marketSubtotals.length > 0 && (
-  <div className="mt-8">
-    <h3 className="text-lg font-semibold text-gray-800 mb-4">
-      Mercados que possuem todos os produtos:
-    </h3>
-    <div className="space-y-4">
-      {marketSubtotals.map((market) => (
-        <div
-          key={market.marketId}
-          className="border border-gray-200 rounded-lg p-4"
-        >
-          <div className="flex justify-between items-center mb-2">
-            {/* Market name as clickable link */}
-            <button
-              className="font-medium text-lg text-blue-600 hover:underline"
-              onClick={() => router.push(`/market/${market.marketId}`)}
-              aria-label={`Ver página do mercado ${market.marketName}`}
-            >
-              {market.marketName}
-            </button>
-            <span className="text-green-600 font-semibold text-lg">
-              Total: R$ {market.subtotal.toFixed(2)}
-            </span>
-          </div>
+              {/* Subtotais por mercado */}
+              {marketSubtotals.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                    Mercados que possuem todos os produtos:
+                  </h3>
+                  <div className="space-y-4">
+                    {marketSubtotals.map((market) => (
+                      <div
+                        key={market.marketId}
+                        className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                          selectedMarketId === market.marketId
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                        onClick={() => setSelectedMarketId(market.marketId)}
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="radio"
+                              name="selectedMarket"
+                              checked={selectedMarketId === market.marketId}
+                              onChange={() =>
+                                setSelectedMarketId(market.marketId)
+                              }
+                              className="text-blue-600"
+                            />
+                            <span className="font-medium text-lg">
+                              {market.marketName}
+                            </span>
+                          </div>
+                          <span className="text-green-600 font-semibold text-lg">
+                            Total: R$ {market.subtotal.toFixed(2)}
+                          </span>
+                        </div>
 
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-gray-600">
-              Produtos disponíveis:
-            </h4>
-            {market.products.map((product) => (
-              <div
-                key={product.id}
-                className="flex justify-between items-center text-sm"
-              >
-                <span>{product.name}</span>
-                <span className="text-gray-600">
-                  R$ {product.price.toFixed(2)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium text-gray-600">
+                            Produtos disponíveis:
+                          </h4>
+                          {market.products.map((product) => (
+                            <div
+                              key={product.id}
+                              className="flex justify-between items-center text-sm"
+                            >
+                              <button
+                                onClick={() =>
+                                  openProductModal(
+                                    product.marketProductId,
+                                    market.marketName,
+                                    product.name,
+                                    product.price
+                                  )
+                                }
+                                className="text-blue-600 hover:text-blue-800 hover:underline text-left"
+                              >
+                                {product.name}
+                              </button>
+                              <span className="text-gray-600">
+                                R$ {product.price.toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="mt-8 border-t border-gray-200 pt-6">
                 <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
@@ -260,16 +413,32 @@ export default function CartPage() {
                   </span>
                   <div className="flex gap-4">
                     <button
-                      onClick={handleBackToFeed}
-                      className="bg-gray-100 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-200"
+                      onClick={handleHistory}
+                      className="bg-gray-100 hover:cursor-pointer text-gray-700 px-6 py-2 rounded-md hover:bg-gray-200"
                     >
-                      Continuar Comprando
+                      Ver compras anteriores
                     </button>
                     <button
-                      onClick={handleGoToCheckout}
-                      className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700"
+                      onClick={handleSavePurchase}
+                      disabled={marketSubtotals.length === 0}
+                      className={`px-6 py-2 rounded-md ${
+                        marketSubtotals.length === 0
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-green-600 hover:cursor-pointer text-white hover:bg-green-700"
+                      }`}
                     >
-                      Finalizar Compra
+                      {marketSubtotals.length > 0
+                        ? (() => {
+                            const selectedMarket = selectedMarketId
+                              ? marketSubtotals.find(
+                                  (m) => m.marketId === selectedMarketId
+                                ) || marketSubtotals[0]
+                              : marketSubtotals[0];
+                            return `Finalizar compra no ${
+                              selectedMarket.marketName
+                            } (R$ ${selectedMarket.subtotal.toFixed(2)})`;
+                          })()
+                        : "Finalizar compra"}
                     </button>
                   </div>
                 </div>
@@ -278,6 +447,118 @@ export default function CartPage() {
           )}
         </div>
       </div>
+
+      {/* Modal de detalhes do produto */}
+      {selectedProduct && (
+        <div
+          className="fixed inset-0 bg-transparent backdrop-blur-md flex items-center justify-center z-50"
+          onClick={closeProductModal}
+        >
+          <div
+            className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Detalhes do Produto
+              </h3>
+              <button
+                onClick={closeProductModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Supermercado:
+                </label>
+                <p className="text-gray-900">{selectedProduct.marketName}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Produto:
+                </label>
+                <p className="text-gray-900">{selectedProduct.productName}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Preço:
+                </label>
+                {editingPrice ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={newPrice}
+                      onChange={(e) =>
+                        setNewPrice(parseFloat(e.target.value) || 0)
+                      }
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={updatePrice}
+                      className="bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 text-sm"
+                    >
+                      Salvar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingPrice(false);
+                        setNewPrice(selectedProduct.price);
+                      }}
+                      className="bg-gray-500 text-white px-3 py-2 rounded-md hover:bg-gray-600 text-sm"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-green-600 font-semibold text-lg">
+                      R$ {selectedProduct.price.toFixed(2)}
+                    </p>
+                    <button
+                      onClick={() => {
+                        setEditingPrice(true);
+                        setNewPrice(selectedProduct.price);
+                      }}
+                      className="bg-blue-100 text-blue-600 px-2 py-1 rounded-md hover:bg-blue-200 text-sm"
+                    >
+                      Editar
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={closeProductModal}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
