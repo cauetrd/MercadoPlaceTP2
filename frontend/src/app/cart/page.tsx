@@ -205,48 +205,53 @@ export default function CartPage() {
                 ))}
               </div>
 
-              {/* Subtotais por mercado */}
-              {marketSubtotals.length > 0 && (
-                <div className="mt-8">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                    Mercados que possuem todos os produtos:
-                  </h3>
-                  <div className="space-y-4">
-                    {marketSubtotals.map((market) => (
-                      <div
-                        key={market.marketId}
-                        className="border border-gray-200 rounded-lg p-4"
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="font-medium text-lg">
-                            {market.marketName}
-                          </span>
-                          <span className="text-green-600 font-semibold text-lg">
-                            Total: R$ {market.subtotal.toFixed(2)}
-                          </span>
-                        </div>
+{/* Subtotais por mercado */}
+{marketSubtotals.length > 0 && (
+  <div className="mt-8">
+    <h3 className="text-lg font-semibold text-gray-800 mb-4">
+      Mercados que possuem todos os produtos:
+    </h3>
+    <div className="space-y-4">
+      {marketSubtotals.map((market) => (
+        <div
+          key={market.marketId}
+          className="border border-gray-200 rounded-lg p-4"
+        >
+          <div className="flex justify-between items-center mb-2">
+            {/* Market name as clickable link */}
+            <button
+              className="font-medium text-lg text-blue-600 hover:underline"
+              onClick={() => router.push(`/market/${market.marketId}`)}
+              aria-label={`Ver página do mercado ${market.marketName}`}
+            >
+              {market.marketName}
+            </button>
+            <span className="text-green-600 font-semibold text-lg">
+              Total: R$ {market.subtotal.toFixed(2)}
+            </span>
+          </div>
 
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium text-gray-600">
-                            Produtos disponíveis:
-                          </h4>
-                          {market.products.map((product) => (
-                            <div
-                              key={product.id}
-                              className="flex justify-between items-center text-sm"
-                            >
-                              <span>{product.name}</span>
-                              <span className="text-gray-600">
-                                R$ {product.price.toFixed(2)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-gray-600">
+              Produtos disponíveis:
+            </h4>
+            {market.products.map((product) => (
+              <div
+                key={product.id}
+                className="flex justify-between items-center text-sm"
+              >
+                <span>{product.name}</span>
+                <span className="text-gray-600">
+                  R$ {product.price.toFixed(2)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
               <div className="mt-8 border-t border-gray-200 pt-6">
                 <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
