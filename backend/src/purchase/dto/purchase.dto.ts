@@ -76,4 +76,10 @@ export class PurchaseWithItemsDto extends PurchaseDto {
     type: [PurchaseItemDto],
   })
   products: PurchaseItemDto[];
+
+  @ApiProperty({
+    description: 'List of purchased products (alias for compatibility)',
+    type: [PurchaseItemDto],
+  })
+  purchasedProducts?: PurchaseItemDto[];
 }

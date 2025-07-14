@@ -17,6 +17,7 @@ interface MarketSubtotal {
     description: string;
     imageUrl: string;
     price: number;
+    lastPrice?: number;
   }>;
 }
 
@@ -24,6 +25,7 @@ export default function CartPage() {
   const [cartItems, setCartItems] = useState<ShoppingListItemResponseDto[]>([]);
   const [marketSubtotals, setMarketSubtotals] = useState<MarketSubtotal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMarketId, setSelectedMarketId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
@@ -57,6 +59,10 @@ export default function CartPage() {
           products: item.products,
         }));
         setMarketSubtotals(mapped);
+        // Selecionar automaticamente o primeiro mercado (menor preço)
+        if (mapped.length > 0 && !selectedMarketId) {
+          setSelectedMarketId(mapped[0].marketId);
+        }
       } else {
         setMarketSubtotals([]);
       }
@@ -110,8 +116,62 @@ export default function CartPage() {
     }
   }, [cartItems]);
 
-  const handleGoToCheckout = () => {
-    router.push("/checkout");
+  const handleSavePurchase = async () => {
+    if (cartItems.length === 0) {
+      toast.error(
+        "Carrinho vazio. Adicione produtos antes de finalizar a compra."
+      );
+      return;
+    }
+
+    if (marketSubtotals.length === 0) {
+      toast.error(
+        "Não há mercados disponíveis para todos os produtos do carrinho."
+      );
+      return;
+    }
+
+    try {
+      // Usar o mercado selecionado ou o primeiro (menor preço) como padrão
+      const selectedMarket = selectedMarketId
+        ? marketSubtotals.find((m) => m.marketId === selectedMarketId) ||
+          marketSubtotals[0]
+        : marketSubtotals[0];
+
+      // Mapear produtos para o formato esperado pela API
+      const purchaseItems = selectedMarket.products.map((product) => ({
+        productId: product.id,
+        marketId: selectedMarket.marketId,
+        price: product.price,
+      }));
+
+      // Criar a compra
+      const purchaseData = {
+        items: purchaseItems,
+        purchaseDate: new Date().toISOString(),
+      };
+
+      await apiService.post("/purchase", purchaseData);
+
+      // Limpar o carrinho após salvar a compra
+      await apiService.delete("/shopping-list");
+      setCartItems([]);
+      setMarketSubtotals([]);
+      setSelectedMarketId(null);
+
+      toast.success(
+        `Compra realizada com sucesso no ${
+          selectedMarket.marketName
+        }! Total: R$ ${selectedMarket.subtotal.toFixed(2)}`
+      );
+    } catch (error) {
+      console.error("Erro ao salvar compra:", error);
+      toast.error("Erro ao finalizar compra. Tente novamente.");
+    }
+  };
+
+  const handleHistory = () => {
+    router.push("/history");
   };
 
   const handleBackToFeed = () => {
@@ -215,12 +275,28 @@ export default function CartPage() {
                     {marketSubtotals.map((market) => (
                       <div
                         key={market.marketId}
-                        className="border border-gray-200 rounded-lg p-4"
+                        className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                          selectedMarketId === market.marketId
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                        onClick={() => setSelectedMarketId(market.marketId)}
                       >
                         <div className="flex justify-between items-center mb-2">
-                          <span className="font-medium text-lg">
-                            {market.marketName}
-                          </span>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="radio"
+                              name="selectedMarket"
+                              checked={selectedMarketId === market.marketId}
+                              onChange={() =>
+                                setSelectedMarketId(market.marketId)
+                              }
+                              className="text-blue-600"
+                            />
+                            <span className="font-medium text-lg">
+                              {market.marketName}
+                            </span>
+                          </div>
                           <span className="text-green-600 font-semibold text-lg">
                             Total: R$ {market.subtotal.toFixed(2)}
                           </span>
@@ -236,9 +312,17 @@ export default function CartPage() {
                               className="flex justify-between items-center text-sm"
                             >
                               <span>{product.name}</span>
-                              <span className="text-gray-600">
-                                R$ {product.price.toFixed(2)}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-600">
+                                  R$ {product.price.toFixed(2)}
+                                </span>
+                                {product.lastPrice &&
+                                  product.lastPrice !== product.price && (
+                                    <span className="text-gray-500 line-through text-xs">
+                                      R$ {product.lastPrice.toFixed(2)}
+                                    </span>
+                                  )}
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -255,16 +339,32 @@ export default function CartPage() {
                   </span>
                   <div className="flex gap-4">
                     <button
-                      onClick={handleBackToFeed}
-                      className="bg-gray-100 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-200"
+                      onClick={handleHistory}
+                      className="bg-gray-100 hover:cursor-pointer text-gray-700 px-6 py-2 rounded-md hover:bg-gray-200"
                     >
-                      Continuar Comprando
+                      Ver compras anteriores
                     </button>
                     <button
-                      onClick={handleGoToCheckout}
-                      className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700"
+                      onClick={handleSavePurchase}
+                      disabled={marketSubtotals.length === 0}
+                      className={`px-6 py-2 rounded-md ${
+                        marketSubtotals.length === 0
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-green-600 hover:cursor-pointer text-white hover:bg-green-700"
+                      }`}
                     >
-                      Finalizar Compra
+                      {marketSubtotals.length > 0
+                        ? (() => {
+                            const selectedMarket = selectedMarketId
+                              ? marketSubtotals.find(
+                                  (m) => m.marketId === selectedMarketId
+                                ) || marketSubtotals[0]
+                              : marketSubtotals[0];
+                            return `Finalizar compra no ${
+                              selectedMarket.marketName
+                            } (R$ ${selectedMarket.subtotal.toFixed(2)})`;
+                          })()
+                        : "Finalizar compra"}
                     </button>
                   </div>
                 </div>

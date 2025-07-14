@@ -274,14 +274,7 @@ export default function Header({ cartRefreshTrigger }: HeaderProps) {
                             >
                               Gerenciar Carrinho
                             </button>
-                            <button
-                              onClick={handleGoToCheckout}
-                              className="flex-1 hover:cursor-pointer bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors text-sm"
-                            >
-                              Finalizar Compra
-                            </button>
                           </div>
-
                           {cartItems.length > 0 && (
                             <button
                               onClick={clearCart}

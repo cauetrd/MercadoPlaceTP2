@@ -404,6 +404,7 @@ export class MarketProductService {
           description: string;
           imageUrl: string;
           price: number;
+          lastPrice: number | null;
         }>;
       }
     > = {};
@@ -427,6 +428,7 @@ export class MarketProductService {
         description: mp.product.description ?? '',
         imageUrl: mp.product.imageUrl ?? '',
         price: mp.price,
+        lastPrice: mp.lastPrice,
       });
     }
 
