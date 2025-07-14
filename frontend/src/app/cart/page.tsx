@@ -13,6 +13,7 @@ interface MarketSubtotal {
   subtotal: number;
   products: Array<{
     id: string;
+    marketProductId: string;
     name: string;
     description: string;
     imageUrl: string;
@@ -25,6 +26,14 @@ export default function CartPage() {
   const [marketSubtotals, setMarketSubtotals] = useState<MarketSubtotal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<{
+    marketProductId: string;
+    marketName: string;
+    productName: string;
+    price: number;
+  } | null>(null);
+  const [editingPrice, setEditingPrice] = useState(false);
+  const [newPrice, setNewPrice] = useState<number>(0);
   const router = useRouter();
 
   const fetchCartItems = async () => {
@@ -99,6 +108,56 @@ export default function CartPage() {
     }
   };
 
+  const updatePrice = async () => {
+    if (!selectedProduct) return;
+
+    try {
+      await apiService.patch(
+        `/market-products/${selectedProduct.marketProductId}`,
+        {
+          price: newPrice,
+        }
+      );
+
+      toast.success("Preço atualizado com sucesso!");
+      setEditingPrice(false);
+
+      // Update the local state
+      setMarketSubtotals((prev) =>
+        prev.map((market) => ({
+          ...market,
+          products: market.products.map((product) =>
+            product.marketProductId === selectedProduct.marketProductId
+              ? { ...product, price: newPrice }
+              : product
+          ),
+          subtotal: market.products.reduce(
+            (sum, product) =>
+              sum +
+              (product.marketProductId === selectedProduct.marketProductId
+                ? newPrice
+                : product.price),
+            0
+          ),
+        }))
+      );
+
+      // Update selected product with new price
+      setSelectedProduct((prev) =>
+        prev ? { ...prev, price: newPrice } : null
+      );
+    } catch (error) {
+      console.error("Erro ao atualizar preço:", error);
+      toast.error("Erro ao atualizar preço. Tente novamente.");
+    }
+  };
+
+  const closeProductModal = () => {
+    setSelectedProduct(null);
+    setEditingPrice(false);
+    setNewPrice(0);
+  };
+
   useEffect(() => {
     fetchCartItems();
   }, []);
@@ -116,6 +175,17 @@ export default function CartPage() {
 
   const handleBackToFeed = () => {
     router.push("/feed");
+  };
+
+  const openProductModal = (
+    marketProductId: string,
+    marketName: string,
+    productName: string,
+    price: number
+  ) => {
+    setSelectedProduct({ marketProductId, marketName, productName, price });
+    setNewPrice(price);
+    setEditingPrice(false);
   };
 
   return (
@@ -235,7 +305,19 @@ export default function CartPage() {
                               key={product.id}
                               className="flex justify-between items-center text-sm"
                             >
-                              <span>{product.name}</span>
+                              <button
+                                onClick={() =>
+                                  openProductModal(
+                                    product.marketProductId,
+                                    market.marketName,
+                                    product.name,
+                                    product.price
+                                  )
+                                }
+                                className="text-blue-600 hover:text-blue-800 hover:underline text-left"
+                              >
+                                {product.name}
+                              </button>
                               <span className="text-gray-600">
                                 R$ {product.price.toFixed(2)}
                               </span>
@@ -273,6 +355,118 @@ export default function CartPage() {
           )}
         </div>
       </div>
+
+      {/* Modal de detalhes do produto */}
+      {selectedProduct && (
+        <div
+          className="fixed inset-0 bg-transparent backdrop-blur-md flex items-center justify-center z-50"
+          onClick={closeProductModal}
+        >
+          <div
+            className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Detalhes do Produto
+              </h3>
+              <button
+                onClick={closeProductModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Supermercado:
+                </label>
+                <p className="text-gray-900">{selectedProduct.marketName}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Produto:
+                </label>
+                <p className="text-gray-900">{selectedProduct.productName}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Preço:
+                </label>
+                {editingPrice ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={newPrice}
+                      onChange={(e) =>
+                        setNewPrice(parseFloat(e.target.value) || 0)
+                      }
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={updatePrice}
+                      className="bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 text-sm"
+                    >
+                      Salvar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingPrice(false);
+                        setNewPrice(selectedProduct.price);
+                      }}
+                      className="bg-gray-500 text-white px-3 py-2 rounded-md hover:bg-gray-600 text-sm"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-green-600 font-semibold text-lg">
+                      R$ {selectedProduct.price.toFixed(2)}
+                    </p>
+                    <button
+                      onClick={() => {
+                        setEditingPrice(true);
+                        setNewPrice(selectedProduct.price);
+                      }}
+                      className="bg-blue-100 text-blue-600 px-2 py-1 rounded-md hover:bg-blue-200 text-sm"
+                    >
+                      Editar
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={closeProductModal}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
