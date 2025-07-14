@@ -475,6 +475,30 @@ async function main() {
 
   console.log('✅ Markets created');
 
+  // Helper function to process promises in batches
+  async function processBatches<T>(
+    promises: Promise<T>[],
+    batchSize: number = 50,
+  ): Promise<T[]> {
+    const results: T[] = [];
+
+    for (let i = 0; i < promises.length; i += batchSize) {
+      const batch = promises.slice(i, i + batchSize);
+      const batchResults = await Promise.all(batch);
+      results.push(...batchResults);
+
+      if (i + batchSize < promises.length) {
+        console.log(
+          `✅ Processed batch ${
+            Math.floor(i / batchSize) + 1
+          } of ${Math.ceil(promises.length / batchSize)}`,
+        );
+      }
+    }
+
+    return results;
+  }
+
   // Create MarketProducts (extensive pricing variations)
   const marketProducts: Promise<any>[] = [];
 
@@ -543,18 +567,26 @@ async function main() {
     }
   }
 
-  await Promise.all(marketProducts);
+  // Process market products in batches
+  await processBatches(marketProducts, 30);
 
   console.log('✅ Market products created');
 
   // Create Reviews (more extensive)
   const reviews: Promise<any>[] = [];
+
   for (let i = 0; i < markets.length; i++) {
     const market = markets[i];
-    const reviewCount = Math.floor(Math.random() * 3) + 1; // 1-3 reviews per market
 
-    for (let j = 0; j < reviewCount; j++) {
-      const randomUser = users[Math.floor(Math.random() * users.length)];
+    // Shuffle users and take the first 1-3 for this market
+    const shuffledUsers = users.sort(() => 0.5 - Math.random());
+    const reviewCount = Math.floor(Math.random() * 3) + 1; // 1-3 reviews per market
+    const reviewers = shuffledUsers.slice(
+      0,
+      Math.min(reviewCount, users.length),
+    );
+
+    for (const reviewer of reviewers) {
       const rating = Math.floor(Math.random() * 5) + 1;
       const comments = [
         'Excelente mercado! Produtos frescos e bom atendimento.',
@@ -570,7 +602,7 @@ async function main() {
       reviews.push(
         prisma.reviewMarket.create({
           data: {
-            userId: randomUser.id,
+            userId: reviewer.id,
             marketId: market.id,
             rating,
             comment: comments[Math.floor(Math.random() * comments.length)],
