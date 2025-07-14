@@ -179,29 +179,65 @@ export class MarketProductController {
   }
 
   @Get('product/:productId')
-@ApiOperation({ summary: 'Listar todos os preços de um produto em diferentes mercados' })
-@ApiResponse({
-  status: 200,
-  description: 'Lista de preços do produto por mercado',
-  type: [MarketProductResponseDto],
-})
-@ApiResponse({
-  status: 404,
-  description: 'Produto não encontrado',
-})
-getByProductId(@Param('productId') productId: string) {
-  return this.marketProductService.findByProductId(productId);
-}
+  @ApiOperation({
+    summary: 'Listar todos os preços de um produto em diferentes mercados',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de preços do produto por mercado',
+    type: [MarketProductResponseDto],
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Produto não encontrado',
+  })
+  getByProductId(@Param('productId') productId: string) {
+    return this.marketProductService.findByProductId(productId);
+  }
 
-@Post('/subtotals/by-market')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
-@ApiOperation({ summary: 'Retorna os subtotais por mercado com base na lista de produtos fornecida' })
-async getMarketSubtotalsByProductIds(
-  @Body() body: { productIds: string[] }
-) {
-  return this.marketProductService.getSubtotalsByProductIds(body.productIds);
-}
-
-
+  @Post('/subtotals/by-market')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Retorna os mercados que possuem todos os produtos especificados com seus subtotais e produtos',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de mercados com subtotais e produtos',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          market: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              name: { type: 'string' },
+              latitude: { type: 'number' },
+              longitude: { type: 'number' },
+            },
+          },
+          total: { type: 'number' },
+          products: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                name: { type: 'string' },
+                description: { type: 'string' },
+                imageUrl: { type: 'string' },
+                price: { type: 'number' },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  async getMarketSubtotalsByProductIds(@Body() body: { productIds: string[] }) {
+    return this.marketProductService.getSubtotalsByProductIds(body.productIds);
+  }
 }

@@ -3,13 +3,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Market } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateMarketProductDto,
   MarketProductResponseDto,
   UpdateMarketProductDto,
 } from './dto/market-product.dto';
-import { Market } from '@prisma/client';
 
 @Injectable()
 export class MarketProductService {
@@ -293,112 +293,152 @@ export class MarketProductService {
     await this.prisma.marketProduct.delete({ where: { id } });
   }
 
-  async findByProductId(productId: string): Promise<MarketProductResponseDto[]> {
-  const product = await this.prisma.product.findUnique({
-    where: { id: productId },
-  });
+  async findByProductId(
+    productId: string,
+  ): Promise<MarketProductResponseDto[]> {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
 
-  if (!product) {
-    throw new NotFoundException('Produto não encontrado');
-  }
-
-  const results = await this.prisma.marketProduct.findMany({
-    where: {
-      productId,
-      isValid: true, // apenas produtos aprovados
-    },
-    include: {
-      market: {
-        select: {
-          id: true,
-          name: true,
-          latitude: true,
-          longitude: true,
-        },
-      },
-      product: {
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          imageUrl: true,
-        },
-      },
-    },
-  });
-
-  return results;
-}
-
-async getSubtotalsByMarket(userId: string) {
-  // Obtem todos os produtos da lista de compras do usuário
-  const userShoppingList = await this.prisma.userShoppingList.findMany({
-    where: { userId },
-    select: { productId: true },
-  });
-
-  const productIds = userShoppingList.map((item) => item.productId);
-
-  if (productIds.length === 0) {
-    return [];
-  }
-
-  // Busca os MarketProducts válidos com base nesses produtos
-  const marketProducts = await this.prisma.marketProduct.findMany({
-    where: {
-      productId: { in: productIds },
-      isValid: true,
-    },
-    include: {
-      market: true,
-    },
-  });
-
-  // Calcula os subtotais por mercado
-  const subtotals: Record<string, { market: Market; total: number }> = {};
-
-  for (const mp of marketProducts) {
-    const marketId = mp.marketId;
-    if (!subtotals[marketId]) {
-      subtotals[marketId] = { market: mp.market, total: 0 };
-    }
-    subtotals[marketId].total += mp.price;
-  }
-
-  // Retorna os resultados como array ordenada pelo total
-  return Object.values(subtotals).sort((a, b) => a.total - b.total);
-}
-
-async getSubtotalsByProductIds(productIds: string[]) {
-  if (productIds.length === 0) return [];
-
-  const marketProducts = await this.prisma.marketProduct.findMany({
-    where: {
-      productId: { in: productIds },
-      isValid: true,
-    },
-    include: {
-      market: true,
-    },
-  });
-
-  const grouped: Record<string, { market: Market; total: number; count: number }> = {};
-
-  for (const mp of marketProducts) {
-    const marketId = mp.marketId;
-    if (!grouped[marketId]) {
-      grouped[marketId] = { market: mp.market, total: 0, count: 0 };
+    if (!product) {
+      throw new NotFoundException('Produto não encontrado');
     }
 
-    grouped[marketId].total += mp.price;
-    grouped[marketId].count += 1;
+    const results = await this.prisma.marketProduct.findMany({
+      where: {
+        productId,
+        isValid: true, // apenas produtos aprovados
+      },
+      include: {
+        market: {
+          select: {
+            id: true,
+            name: true,
+            latitude: true,
+            longitude: true,
+          },
+        },
+        product: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            imageUrl: true,
+          },
+        },
+      },
+    });
+
+    return results;
   }
 
-  const result = Object.values(grouped)
-    .filter((entry) => entry.count === productIds.length) // apenas mercados que têm todos os produtos
-    .sort((a, b) => a.total - b.total); // ordenado por total crescente
+  async getSubtotalsByMarket(userId: string) {
+    // Obtem todos os produtos da lista de compras do usuário
+    const userShoppingList = await this.prisma.userShoppingList.findMany({
+      where: { userId },
+      select: { productId: true },
+    });
 
-  return result;
-}
+    const productIds = userShoppingList.map((item) => item.productId);
 
+    if (productIds.length === 0) {
+      return [];
+    }
+
+    // Busca os MarketProducts válidos com base nesses produtos
+    const marketProducts = await this.prisma.marketProduct.findMany({
+      where: {
+        productId: { in: productIds },
+        isValid: true,
+      },
+      include: {
+        market: true,
+      },
+    });
+
+    // Calcula os subtotais por mercado
+    const subtotals: Record<string, { market: Market; total: number }> = {};
+
+    for (const mp of marketProducts) {
+      const marketId = mp.marketId;
+      if (!subtotals[marketId]) {
+        subtotals[marketId] = { market: mp.market, total: 0 };
+      }
+      subtotals[marketId].total += mp.price;
+    }
+
+    // Retorna os resultados como array ordenada pelo total
+    return Object.values(subtotals).sort((a, b) => a.total - b.total);
+  }
+
+  async getSubtotalsByProductIds(productIds: string[]) {
+    if (productIds.length === 0) return [];
+
+    const marketProducts = await this.prisma.marketProduct.findMany({
+      where: {
+        productId: { in: productIds },
+        isValid: true,
+      },
+      include: {
+        market: true,
+        product: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            imageUrl: true,
+          },
+        },
+      },
+    });
+
+    const grouped: Record<
+      string,
+      {
+        market: Market;
+        total: number;
+        count: number;
+        products: Array<{
+          id: string;
+          name: string;
+          description: string;
+          imageUrl: string;
+          price: number;
+        }>;
+      }
+    > = {};
+
+    for (const mp of marketProducts) {
+      const marketId = mp.marketId;
+      if (!grouped[marketId]) {
+        grouped[marketId] = {
+          market: mp.market,
+          total: 0,
+          count: 0,
+          products: [],
+        };
+      }
+
+      grouped[marketId].total += mp.price;
+      grouped[marketId].count += 1;
+      grouped[marketId].products.push({
+        id: mp.product.id,
+        name: mp.product.name,
+        description: mp.product.description ?? '',
+        imageUrl: mp.product.imageUrl ?? '',
+        price: mp.price,
+      });
+    }
+
+    const result = Object.values(grouped)
+      .filter((entry) => entry.count === productIds.length) // apenas mercados que têm todos os produtos
+      .map((entry) => ({
+        market: entry.market,
+        total: entry.total,
+        products: entry.products,
+      }))
+      .sort((a, b) => a.total - b.total); // ordenado por total crescente
+
+    return result;
+  }
 }

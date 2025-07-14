@@ -11,8 +11,14 @@ interface MarketSubtotal {
   marketId: string;
   marketName: string;
   subtotal: number;
+  products: Array<{
+    id: string;
+    name: string;
+    description: string;
+    imageUrl: string;
+    price: number;
+  }>;
 }
-
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<ShoppingListItemResponseDto[]>([]);
@@ -35,32 +41,37 @@ export default function CartPage() {
     }
   };
 
-const fetchMarketSubtotals = async (productIds: string[]) => {
-  try {
-    const response = await apiService.post("/market-products/subtotals/by-market", { productIds });
-
-    if (Array.isArray(response)) {
-      // Mapear para o formato esperado
-      const mapped = response.map((item: any) => ({
-        marketId: item.market.id,
-        marketName: item.market.name,
-        subtotal: item.total,
-      }));
-      setMarketSubtotals(mapped);
-    } else {
-      setMarketSubtotals([]);
+  const fetchMarketSubtotals = async (productIds: string[]) => {
+    try {
+      const response = await apiService.post(
+        "/market-products/subtotals/by-market",
+        { productIds }
+      );
+      console.log(response);
+      if (Array.isArray(response)) {
+        // Mapear para o formato esperado
+        const mapped = response.map((item: any) => ({
+          marketId: item.market.id,
+          marketName: item.market.name,
+          subtotal: item.total,
+          products: item.products,
+        }));
+        setMarketSubtotals(mapped);
+      } else {
+        setMarketSubtotals([]);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar subtotais dos mercados:", err);
+      toast.error("Erro ao calcular subtotais dos mercados.");
     }
-  } catch (err) {
-    console.error("Erro ao carregar subtotais dos mercados:", err);
-    toast.error("Erro ao calcular subtotais dos mercados.");
-  }
-};
-
+  };
 
   const removeFromCart = async (productId: string) => {
     try {
       await apiService.delete(`/shopping-list/${productId}`);
-      const updatedCart = cartItems.filter((item) => item.productId !== productId);
+      const updatedCart = cartItems.filter(
+        (item) => item.productId !== productId
+      );
       setCartItems(updatedCart);
       toast.success("Item removido do carrinho!");
 
@@ -198,18 +209,39 @@ const fetchMarketSubtotals = async (productIds: string[]) => {
               {marketSubtotals.length > 0 && (
                 <div className="mt-8">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                    Subtotais por mercado:
+                    Mercados que possuem todos os produtos:
                   </h3>
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     {marketSubtotals.map((market) => (
                       <div
                         key={market.marketId}
-                        className="flex justify-between items-center p-3 border border-gray-100 rounded-md bg-gray-50"
+                        className="border border-gray-200 rounded-lg p-4"
                       >
-                        <span className="font-medium">{market.marketName}</span>
-                        <span className="text-green-600 font-semibold">
-                          R$ {market.subtotal.toFixed(2)}
-                        </span>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium text-lg">
+                            {market.marketName}
+                          </span>
+                          <span className="text-green-600 font-semibold text-lg">
+                            Total: R$ {market.subtotal.toFixed(2)}
+                          </span>
+                        </div>
+
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium text-gray-600">
+                            Produtos disponíveis:
+                          </h4>
+                          {market.products.map((product) => (
+                            <div
+                              key={product.id}
+                              className="flex justify-between items-center text-sm"
+                            >
+                              <span>{product.name}</span>
+                              <span className="text-gray-600">
+                                R$ {product.price.toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>
