@@ -164,7 +164,8 @@ async function main() {
       data: {
         name: 'Arroz Branco 5kg',
         description: 'Arroz branco tipo 1, grãos longos',
-        imageUrl: 'https://example.com/arroz-branco.jpg',
+        imageUrl:
+          'https://prezunic.vtexassets.com/arquivos/ids/177896/65429da79d89f88ff4704b67.jpg?v=638344613617770000',
       },
     }),
     prisma.product.create({
@@ -178,21 +179,24 @@ async function main() {
       data: {
         name: 'Feijão Carioca 1kg',
         description: 'Feijão carioca tradicional brasileiro',
-        imageUrl: 'https://example.com/feijao-carioca.jpg',
+        imageUrl:
+          'https://redemix.vteximg.com.br/arquivos/ids/209460-1000-1000/7897136400155.jpg?v=638350604534800000',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Lentilha 500g',
         description: 'Lentilha rica em proteínas e ferro',
-        imageUrl: 'https://example.com/lentilha.jpg',
+        imageUrl:
+          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVCHUqZOlG3kQx_7lcmflT2LAoOkn98EmgxQ&s',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Aveia em Flocos 500g',
         description: 'Aveia em flocos finos, ideal para vitaminas',
-        imageUrl: 'https://example.com/aveia.jpg',
+        imageUrl:
+          'https://www.davo.com.br/ccstore/v1/images/?source=/file/v518286595085818477/products/prod_7892840815752.imagem1.jpg&height=940&width=940',
       },
     }),
 
@@ -209,28 +213,32 @@ async function main() {
       data: {
         name: 'Leite Desnatado 1L',
         description: 'Leite desnatado, baixo teor de gordura',
-        imageUrl: 'https://example.com/leite-desnatado.jpg',
+        imageUrl:
+          'https://piracanjuba-institucional-prd.s3.sa-east-1.amazonaws.com/product_images/image/leite-desnatado-piracanjuba-frente-1l-848x1007px-470.webp',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Queijo Mussarela 500g',
         description: 'Queijo mussarela fatiado',
-        imageUrl: 'https://example.com/queijo-mussarela.jpg',
+        imageUrl:
+          'https://www.arenaatacado.com.br/on/demandware.static/-/Sites-storefront-catalog-sv/default/dw31d3d5e7/Produtos/965715-7896275980870-queijo%20mussarela%20frimesa%20fatiado%20500g-frimesa-1.jpg',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Iogurte Natural 170g',
         description: 'Iogurte natural sem açúcar',
-        imageUrl: 'https://example.com/iogurte.jpg',
+        imageUrl:
+          'https://superprix.vteximg.com.br/arquivos/ids/173130-600-600/Iogurte-Itambe-Morango-170g.png?v=636132684249730000',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Manteiga 200g',
         description: 'Manteiga com sal',
-        imageUrl: 'https://example.com/manteiga.jpg',
+        imageUrl:
+          'https://comper.vteximg.com.br/arquivos/ids/160711-1000-1000/1027484.jpg?v=637210548673100000',
       },
     }),
 
@@ -247,14 +255,16 @@ async function main() {
       data: {
         name: 'Pão de Forma Integral',
         description: 'Pão de forma integral, 500g',
-        imageUrl: 'https://example.com/pao-forma.jpg',
+        imageUrl:
+          'https://superprix.vteximg.com.br/arquivos/ids/182349/816124.jpg?v=637122110583200000',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Biscoito Cream Cracker',
         description: 'Biscoito cream cracker, 400g',
-        imageUrl: 'https://example.com/biscoito.jpg',
+        imageUrl:
+          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQyeKOfE7pogtwCT7QdKEHA-vzxVswJo3uLaA&s',
       },
     }),
 
@@ -279,21 +289,23 @@ async function main() {
       data: {
         name: 'Laranja Lima 1kg',
         description: 'Laranja lima doce, rica em vitamina C',
-        imageUrl: 'https://example.com/laranja.jpg',
+        imageUrl:
+          'https://obahortifruti.vtexassets.com/arquivos/ids/6157809/Laranja-Lima-Kg.png?v=638461110560830000',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Mamão Papaya 1kg',
         description: 'Mamão papaya maduro',
-        imageUrl: 'https://example.com/mamao.jpg',
+        imageUrl: 'https://vallefrutas.com.br/wp-content/uploads/papaya-01.png',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Uva Itália 500g',
         description: 'Uva itália doce e suculenta',
-        imageUrl: 'https://example.com/uva.jpg',
+        imageUrl:
+          'https://scfoods.fbitsstatic.net/img/p/uva-italia-500g-70940/257559.jpg?w=800&h=800&v=no-change&qs=ignore',
       },
     }),
 
@@ -302,28 +314,32 @@ async function main() {
       data: {
         name: 'Tomate 1kg',
         description: 'Tomate maduro para salada',
-        imageUrl: 'https://example.com/tomate.jpg',
+        imageUrl:
+          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSVGZn_5pooSLj0gbgR_rk3PXNDKzo7m7jY0A&s',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Cebola 1kg',
         description: 'Cebola branca',
-        imageUrl: 'https://example.com/cebola.jpg',
+        imageUrl:
+          'https://cdn.awsli.com.br/300x300/305/305913/produto/10293544/cebola-1d05720a.jpg',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Alface Americana',
         description: 'Alface americana crocante',
-        imageUrl: 'https://example.com/alface.jpg',
+        imageUrl:
+          'https://superprix.vteximg.com.br/arquivos/ids/178850/Alface-Crespa-Verde-Un-396.png?v=636934628540170000',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Cenoura 1kg',
         description: 'Cenoura orgânica',
-        imageUrl: 'https://example.com/cenoura.jpg',
+        imageUrl:
+          'https://ibassets.com.br/ib.item.image.big/b-d5de058c7a7d492f9d36f64f01b8ee17.jpg',
       },
     }),
 
@@ -332,21 +348,24 @@ async function main() {
       data: {
         name: 'Frango Inteiro 1kg',
         description: 'Frango inteiro congelado',
-        imageUrl: 'https://example.com/frango.jpg',
+        imageUrl:
+          'https://carrefourbrfood.vtexassets.com/arquivos/ids/138226020/7087942.png?v=638446527623200000',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Carne Moída 1kg',
         description: 'Carne moída bovina',
-        imageUrl: 'https://example.com/carne-moida.jpg',
+        imageUrl:
+          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQOoEEHn9j-ve7DmxyF-t_Mr6bN9ajcnyw4ww&s',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Linguiça Calabresa 500g',
         description: 'Linguiça calabresa defumada',
-        imageUrl: 'https://example.com/linguica.jpg',
+        imageUrl:
+          'https://bretas.vtexassets.com/arquivos/ids/215140/65ce2283f63f6ecb008825bd.jpg?v=638436048678830000',
       },
     }),
 
@@ -355,21 +374,24 @@ async function main() {
       data: {
         name: 'Suco de Laranja 1L',
         description: 'Suco de laranja integral',
-        imageUrl: 'https://example.com/suco-laranja.jpg',
+        imageUrl:
+          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRNbAwyEfpD25c4YHth27yxMZxJHuxUNhFfJQ&s',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Refrigerante Cola 2L',
         description: 'Refrigerante cola gelado',
-        imageUrl: 'https://example.com/refrigerante.jpg',
+        imageUrl:
+          'https://superprix.vteximg.com.br/arquivos/ids/210608-600-600/BMo6Zlso.png?v=638083543189830000',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Água Mineral 1,5L',
         description: 'Água mineral natural',
-        imageUrl: 'https://example.com/agua.jpg',
+        imageUrl:
+          'https://www.extramercado.com.br/img/uploads/1/298/33182298.png',
       },
     }),
 
@@ -378,21 +400,24 @@ async function main() {
       data: {
         name: 'Detergente Líquido 500ml',
         description: 'Detergente líquido neutro',
-        imageUrl: 'https://example.com/detergente.jpg',
+        imageUrl:
+          'https://tb0932.vtexassets.com/arquivos/ids/169546/Detergente%20Neutro%20500ml%20Ype%20101095.png.png?v=638773003324270000',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Papel Higiênico 8 rolos',
         description: 'Papel higiênico folha dupla',
-        imageUrl: 'https://example.com/papel-higienico.jpg',
+        imageUrl:
+          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSF5u7_QoyB8M8frlf1_kFdqzxKNaCZDC92pA&s',
       },
     }),
     prisma.product.create({
       data: {
         name: 'Sabão em Pó 1kg',
         description: 'Sabão em pó concentrado',
-        imageUrl: 'https://example.com/sabao-po.jpg',
+        imageUrl:
+          'https://t10917.vteximg.com.br/arquivos/ids/170084-1000-1000/SABAO-PO-EMB---4-KG-TIXAN-PRIMAVERA_IMG1.jpg?v=638751553953870000',
       },
     }),
   ]);
@@ -616,13 +641,14 @@ async function main() {
 
   console.log('✅ Reviews created');
 
-  // Create Purchase History (more extensive)
-  const purchases: Promise<any>[] = [];
-  const purchasedProducts: Promise<any>[] = [];
+  // Create Purchase History (more extensive) - Sequential processing
+  console.log('Creating purchase history...');
 
   for (let i = 0; i < users.length; i++) {
     const user = users[i];
     const purchaseCount = Math.floor(Math.random() * 4) + 1; // 1-4 purchases per user
+
+    console.log(`Processing purchases for user ${i + 1}/${users.length}...`);
 
     for (let j = 0; j < purchaseCount; j++) {
       const randomDate = new Date(
@@ -658,7 +684,8 @@ async function main() {
       }
 
       if (purchaseProducts.length > 0) {
-        const purchase = prisma.purchase.create({
+        // Create the purchase first, then create purchased products sequentially
+        const purchase = await prisma.purchase.create({
           data: {
             userId: user.id,
             totalPrice: Math.round(totalPrice * 100) / 100,
@@ -666,27 +693,21 @@ async function main() {
           },
         });
 
-        purchases.push(purchase);
-
-        // Add purchased products
-        purchase.then((p) => {
-          purchaseProducts.forEach((pp) => {
-            purchasedProducts.push(
-              prisma.purchasedProduct.create({
-                data: {
-                  ...pp,
-                  purchaseId: p.id,
-                },
-              }),
-            );
+        // Create purchased products one by one to avoid timeout
+        for (const pp of purchaseProducts) {
+          await prisma.purchasedProduct.create({
+            data: {
+              purchaseId: purchase.id,
+              userId: pp.userId,
+              productId: pp.productId,
+              marketId: pp.marketId,
+              price: pp.price,
+            },
           });
-        });
+        }
       }
     }
   }
-
-  await Promise.all(purchases);
-  await Promise.all(purchasedProducts);
 
   console.log('✅ Purchase history created');
 

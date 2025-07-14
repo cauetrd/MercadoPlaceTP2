@@ -363,9 +363,14 @@ export default function CartPage() {
                               }
                               className="text-blue-600"
                             />
-                            <span className="font-medium text-lg">
+                            <button
+                              className="font-medium hover:underline hover:cursor-pointer text-lg"
+                              onClick={() =>
+                                router.push(`/market/${market.marketId}`)
+                              }
+                            >
                               {market.marketName}
-                            </span>
+                            </button>
                           </div>
                           <span className="text-green-600 font-semibold text-lg">
                             Total: R$ {market.subtotal.toFixed(2)}
