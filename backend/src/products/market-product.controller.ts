@@ -226,6 +226,7 @@ export class MarketProductController {
               type: 'object',
               properties: {
                 id: { type: 'string' },
+                marketProductId: { type: 'string' },
                 name: { type: 'string' },
                 description: { type: 'string' },
                 imageUrl: { type: 'string' },
