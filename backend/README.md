@@ -35,10 +35,20 @@ API para sistema de marketplace de produtos com gerenciamento de usuários, prod
 ## Lista de Compras
 
 - 🛒 Adicionar/remover produtos
-- 🔢 Alterar quantidades
-- ✅ Seleção de itens para compra
-- 💳 Finalização de compras
-- 🧮 Cálculo de totais
+- 🔢 Adicionar múltiplos produtos
+- 📊 Comparar preços entre mercados
+- 🧮 Cálculo de subtotais por mercado
+- 🎯 Ordenação por preço e distância
+- 🗑️ Limpar lista completa
+
+## Compras
+
+- 💳 Registrar compras com múltiplos itens
+- 📅 Data customizada de compra
+- 📊 Estatísticas de compras por usuário
+- 🔍 Histórico completo de compras
+- ✏️ Edição de compras (Admin)
+- 🗑️ Exclusão de compras (Admin)
 
 ## Avaliações
 
@@ -57,7 +67,8 @@ src/
 ├── users/          # Gestão de usuários
 ├── products/       # Gestão de produtos
 ├── markets/        # Gestão de mercados
-├── shopping-list/  # Lista de compras
+├── shopping-list/  # Lista de compras e comparação
+├── purchase/       # Gestão de compras
 ├── reviews/        # Avaliações
 └── prisma/         # Configuração de banco
 ```
@@ -73,21 +84,21 @@ src/
 
 ## Testes Implementados
 
-- ✅ 37 testes unitários passando
-- ✅ 10 testes E2E passando
-- 🔬 Coverage de serviços principais
-- 🚀 Testes de integração completos
+- ✅ 65+ testes unitários passando
+- ✅ 25+ testes E2E passando
+- 🔬 Coverage completo de todos os serviços
+- 🚀 Testes de integração abrangentes
 - 📊 Dados de Exemplo
 
 ## O sistema vem populado com:
 
 - 👨‍💼 Admin: admin@mercadoplace.com (senha: admin123)
-- 👤 Usuário: user@mercadoplace.com (senha: user123)
-- 🏪 3 mercados com localizações reais
-- 📦 6 produtos (5 aprovados, 1 pendente)
-- ⭐ 2 avaliações de exemplo
-- 🛒 Lista de compras com itens
-- 📈 Histórico de compras completo
+- 👤 8 usuários diversos com localizações
+- 🏪 10 mercados com localizações reais
+- 📦 32 produtos variados (90% aprovados)
+- ⭐ Avaliações distribuídas entre mercados
+- 🛒 Listas de compras populadas
+- 📈 Histórico extenso de compras
 
 ## 🚀 Como Iniciar
 
@@ -111,6 +122,7 @@ Acesse:
 npm test              # Testes unitários
 npm run test:e2e      # Testes E2E
 npm run test:cov      # Coverage
+npm run test:watch    # Modo watch
 ```
 
 ## 📋 Histórias de Usuário - Status
@@ -120,10 +132,14 @@ npm run test:cov      # Coverage
 <input checked="" disabled="" type="checkbox"> Login/cadastro  
 <input checked="" disabled="" type="checkbox"> Ver produtos e ordenar por preço/distância  
 <input checked="" disabled="" type="checkbox"> Adicionar/remover itens da lista  
+<input checked="" disabled="" type="checkbox"> Adicionar múltiplos itens à lista  
+<input checked="" disabled="" type="checkbox"> Comparar preços entre mercados  
 <input checked="" disabled="" type="checkbox"> Reiniciar lista de compras  
+<input checked="" disabled="" type="checkbox"> Registrar compras realizadas  
+<input checked="" disabled="" type="checkbox"> Ver histórico de compras  
+<input checked="" disabled="" type="checkbox"> Ver estatísticas pessoais  
 <input checked="" disabled="" type="checkbox"> Ver informações dos produtos  
 <input checked="" disabled="" type="checkbox"> Atualizar informações de produtos (+1 ponto)  
-<input checked="" disabled="" type="checkbox"> Ver compras anteriores  
 <input checked="" disabled="" type="checkbox"> Cadastrar novos produtos (+1 ponto)  
 <input checked="" disabled="" type="checkbox"> Escrever reviews de lojas  
 <input checked="" disabled="" type="checkbox"> Editar perfil  
@@ -137,14 +153,21 @@ npm run test:cov      # Coverage
 <input checked="" disabled="" type="checkbox"> Aprovar/reprovar produtos  
 <input checked="" disabled="" type="checkbox"> Cadastrar lojas  
 <input checked="" disabled="" type="checkbox"> Editar produtos/mercados  
-<input checked="" disabled="" type="checkbox"> Remover mercados/produtos
+<input checked="" disabled="" type="checkbox"> Remover mercados/produtos  
+<input checked="" disabled="" type="checkbox"> Ver todas as compras  
+<input checked="" disabled="" type="checkbox"> Editar compras de usuários  
+<input checked="" disabled="" type="checkbox"> Remover compras  
+<input checked="" disabled="" type="checkbox"> Ver estatísticas globais
 
 ## 🔧 Recursos Especiais
 
 - 🎯 Validação automática de dados
 - 🔒 Segurança JWT robusta
 - 📍 Cálculo de distância geográfica
+- 🧮 Comparação inteligente de preços
 - 💎 TypeScript 100%
 - 📖 Documentação Swagger completa
 - 🎨 DTOs tipados para todas as operações
 - 🚨 Tratamento de erros consistente
+- 📊 Sistema de pontuação por contribuições
+- 🔄 Transações de banco de dados seguras

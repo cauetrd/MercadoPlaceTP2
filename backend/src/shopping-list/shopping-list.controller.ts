@@ -88,6 +88,7 @@ export class ShoppingListController {
   }
 
   @Post('compare')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Compare prices for products in shopping list' })
   @ApiResponse({
     status: 200,
